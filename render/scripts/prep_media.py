@@ -70,6 +70,7 @@ if fl:
 GRADE = False
 os.makedirs(os.path.join(dst, "pano"), exist_ok=True)
 for f in glob.glob(os.path.join(src, "pano", "*.jpg")):
+    if os.path.basename(f).startswith(("living@", "bedroom@")): continue   # rejected interior variants
     im = Image.open(f).convert("RGB")
     if im.width > 4096: im = im.resize((4096, 2048), Image.LANCZOS)
     im.save(os.path.join(dst, "pano", os.path.basename(f)), "JPEG", quality=85, optimize=True, progressive=True)
