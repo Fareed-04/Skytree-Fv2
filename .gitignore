@@ -1,0 +1,5 @@
+.env*
+.DS_Store
+render/out/
+render/assets/
+__pycache__/

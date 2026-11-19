@@ -1,0 +1,24 @@
+[
+ {
+  "id": "3d73eb2b-87fc-4504-96ce-097e62310fb1",
+  "slug": "living",
+  "kind": "interior",
+  "target": 0,
+  "name": "Living room",
+  "fileType": "blend",
+  "downloadUrl": "https://www.blenderkit.com/api/v1/downloads/afba2699-deb1-4975-a1ef-6e9062383fd1/",
+  "bytes": 114359741,
+  "license": "royalty_free"
+ },
+ {
+  "id": "b3e0b8fa-5f34-4d78-b41a-d3178fa52276",
+  "slug": "bedroom",
+  "kind": "interior",
+  "target": 0,
+  "name": "Neoclassic bedroom",
+  "fileType": "blend",
+  "downloadUrl": "https://www.blenderkit.com/api/v1/downloads/4ed1e94c-212b-48c9-86d3-d6b254f903a8/",
+  "bytes": 145082311,
+  "license": "royalty_free"
+ }
+]

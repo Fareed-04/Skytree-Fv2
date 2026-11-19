@@ -1,0 +1,134 @@
+{
+ "levels": [
+  {
+   "index": 0,
+   "name": "G",
+   "zBottom": 0.0,
+   "zTop": 11.629999999999999,
+   "maskValue": 16
+  },
+  {
+   "index": 1,
+   "name": "1",
+   "zBottom": 11.629999999999999,
+   "zTop": 18.93,
+   "maskValue": 32
+  },
+  {
+   "index": 2,
+   "name": "2",
+   "zBottom": 18.93,
+   "zTop": 25.03,
+   "maskValue": 48
+  },
+  {
+   "index": 3,
+   "name": "3",
+   "zBottom": 25.03,
+   "zTop": 28.53,
+   "maskValue": 64
+  },
+  {
+   "index": 4,
+   "name": "4",
+   "zBottom": 28.53,
+   "zTop": 32.03,
+   "maskValue": 80
+  },
+  {
+   "index": 5,
+   "name": "5",
+   "zBottom": 32.03,
+   "zTop": 35.53,
+   "maskValue": 96
+  },
+  {
+   "index": 6,
+   "name": "6",
+   "zBottom": 35.53,
+   "zTop": 39.03,
+   "maskValue": 112
+  },
+  {
+   "index": 7,
+   "name": "7",
+   "zBottom": 39.03,
+   "zTop": 42.53,
+   "maskValue": 128
+  },
+  {
+   "index": 8,
+   "name": "8",
+   "zBottom": 42.53,
+   "zTop": 46.03,
+   "maskValue": 144
+  },
+  {
+   "index": 9,
+   "name": "9",
+   "zBottom": 46.03,
+   "zTop": 49.53,
+   "maskValue": 160
+  },
+  {
+   "index": 10,
+   "name": "10",
+   "zBottom": 49.53,
+   "zTop": 53.03,
+   "maskValue": 176
+  },
+  {
+   "index": 11,
+   "name": "11",
+   "zBottom": 53.03,
+   "zTop": 56.53,
+   "maskValue": 192
+  },
+  {
+   "index": 12,
+   "name": "12",
+   "zBottom": 56.53,
+   "zTop": 60.03,
+   "maskValue": 208
+  },
+  {
+   "index": 13,
+   "name": "13",
+   "zBottom": 60.03,
+   "zTop": 63.53,
+   "maskValue": 224
+  },
+  {
+   "index": 14,
+   "name": "PH",
+   "zBottom": 63.53,
+   "zTop": 82.1,
+   "maskValue": 240
+  }
+ ],
+ "orbit": {
+  "radius": 240.0,
+  "elev_deg": 8.0,
+  "target_z": 45.0,
+  "lens": 32.0,
+  "az0": -100.0,
+  "step": 5.0,
+  "count": 41
+ },
+ "explode": {
+  "az": 32.0,
+  "elev": 10.0,
+  "dist": 290.0,
+  "target_z": 64.0,
+  "lens": 33.0,
+  "frames": 36
+ },
+ "size": [
+  1600,
+  900
+ ],
+ "maskSize": [
+  800,
+  450
+ ]
+}

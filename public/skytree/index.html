@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="/skytree/">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sky Tree Tower · Interactive Explorer</title>
+<meta name="description" content="Explore Sky Tree Tower, Pine Avenue Lahore: 360° exterior, every floor, residences and a virtual tour.">
+<meta name="theme-color" content="#0d0c0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%230d0c0a%22/%3E%3Ctext x=%2216%22 y=%2223%22 font-size=%2220%22 text-anchor=%22middle%22 fill=%22%23d9b46a%22 font-family=%22Georgia%22%3ES%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
+<style>
+:root{--ink:#0d0c0a;--ink2:#16140f;--line:rgba(232,214,170,.18);--gold:#d9b46a;--gold2:#f1d79c;--cream:#f4ecdc;--mute:rgba(244,236,220,.62);--av:#7fd1a0;--res:#e0b35a;--sold:#d4736a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--ink);color:var(--cream);font-family:Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.serif{font-family:"Cormorant Garamond",Georgia,serif;letter-spacing:.02em}
+#stage{position:fixed;inset:0;touch-action:none;cursor:grab;background:#0b0b0b}
+#stage.drag{cursor:grabbing}
+#view{position:absolute;inset:0;width:100%;height:100%;display:block}
+.vignette{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.55) 0,rgba(0,0,0,0) 22%,rgba(0,0,0,0) 62%,rgba(0,0,0,.7) 100%)}
+/* top bar */
+header{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 22px 14px;z-index:20;pointer-events:none}
+header>*{pointer-events:auto}
+.brand{display:flex;flex-direction:column;line-height:1}
+.brand b{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:26px;letter-spacing:.18em;color:var(--gold2)}
+.brand span{font-size:10.5px;letter-spacing:.32em;text-transform:uppercase;color:var(--mute);margin-top:6px}
+nav.tabs{display:flex;gap:4px;background:rgba(13,12,10,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:999px;padding:4px}
+nav.tabs button{padding:8px 14px;border-radius:999px;font-size:12.5px;letter-spacing:.06em;color:var(--mute)}
+nav.tabs button.on{background:var(--gold);color:#1a1408;font-weight:600}
+.cta{padding:10px 18px;border-radius:999px;background:var(--gold);color:#1a1408;font-weight:600;font-size:13px;letter-spacing:.04em}
+/* controls */
+.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));z-index:20;display:flex;gap:8px;align-items:center;background:rgba(13,12,10,.6);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:999px;padding:6px}
+.dock button{padding:10px 16px;border-radius:999px;font-size:13px;display:flex;gap:8px;align-items:center;white-space:nowrap}
+.dock button.on{background:rgba(217,180,106,.18);color:var(--gold2)}
+.dock .sep{width:1px;height:22px;background:var(--line)}
+.hint{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:15;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);pointer-events:none;transition:opacity .6s}
+/* floor rail */
+#pad{position:fixed;left:18px;top:50%;transform:translateY(-50%);z-index:18;display:grid;grid-template-columns:repeat(3,18px);gap:4px;padding:10px;background:rgba(13,12,10,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px}
+#pad b{grid-column:1/4;font-size:9px;letter-spacing:.18em;color:var(--mute);text-align:center;font-weight:500;padding-bottom:2px}
+#pad button{width:18px;height:18px;border-radius:5px;border:1px solid rgba(244,236,220,.25);background:transparent;padding:0;cursor:pointer}
+#pad button:hover{background:rgba(244,236,220,.15)}#pad button.on{background:var(--gold);border-color:var(--gold)}#pad button:disabled{opacity:.3;cursor:default}
+#pad small{grid-column:1/4;font-size:9px;color:var(--cream);text-align:center;letter-spacing:.08em;white-space:nowrap;padding-top:2px}
+#pres{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:30;display:none;align-items:center;gap:14px;padding:10px 12px;background:rgba(13,12,10,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:18px;max-width:calc(100vw - 24px)}
+#pres button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(244,236,220,.06);color:var(--cream);font-size:20px;cursor:pointer;flex:none}
+#pres button:hover{background:var(--gold);color:#1a1408}#pres .cap{min-width:0;text-align:center}#pres .cap small{display:block;font-size:10px;letter-spacing:.2em;color:var(--gold);text-transform:uppercase}
+#pres .cap h4{margin:2px 0 0;font:500 17px/1.25 "Cormorant Garamond",serif;color:var(--cream)}#pres .cap p{margin:2px 0 0;font-size:12px;color:var(--mute)}
+#pres .x{width:30px;height:30px;font-size:13px}
+body.present #pres{display:flex}body.present header,body.present .dock,body.present #rail,body.present #pad,body.present .hint,body.present #tip{opacity:0;pointer-events:none}
+header,.dock,#rail,#pad{transition:opacity .4s}
+#rail{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:18;display:flex;flex-direction:column-reverse;gap:3px;background:rgba(13,12,10,.5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:16px;padding:8px 6px;max-height:70vh;overflow:auto}
+#rail button{min-width:42px;padding:6px 8px;border-radius:9px;font-size:12px;color:var(--mute);text-align:center}
+#rail button:hover,#rail button.hov{color:var(--cream);background:rgba(244,236,220,.08)}
+#rail button.sel{background:var(--gold);color:#1a1408;font-weight:600}
+#rail .lbl{font-size:9px;letter-spacing:.2em;color:var(--mute);text-align:center;padding:4px 0}
+/* tooltip */
+#tip{position:fixed;z-index:19;pointer-events:none;padding:8px 12px;border-radius:10px;background:rgba(13,12,10,.82);border:1px solid var(--line);font-size:12.5px;white-space:nowrap;transform:translate(14px,-50%);opacity:0;transition:opacity .15s}
+#tip b{color:var(--gold2);font-weight:600}
+/* side sheet */
+.sheet{position:fixed;z-index:30;top:0;right:0;bottom:0;width:min(420px,100vw);background:linear-gradient(180deg,#14120e,#0d0c0a);border-left:1px solid var(--line);transform:translateX(105%);transition:transform .45s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+.sheet.open{transform:none}
+.sheet .hd{padding:calc(22px + env(safe-area-inset-top)) 24px 14px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--line)}
+.sheet .hd h2{font-family:"Cormorant Garamond",serif;font-size:34px;font-weight:600;color:var(--gold2);line-height:1}
+.sheet .hd small{display:block;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--mute);margin-bottom:8px}
+.x{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:18px;flex:none}
+.sheet .bd{padding:18px 24px;overflow:auto;flex:1}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0 18px}
+.kv div{border:1px solid var(--line);border-radius:12px;padding:12px}
+.kv div span{display:block;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}
+.kv div b{font-size:17px;font-weight:600}
+.unit{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;width:100%;text-align:left}
+.unit:hover{border-color:var(--gold)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.unit .n{font-weight:600;width:46px}
+.unit .m{flex:1;color:var(--mute);font-size:13px}
+.unit .p{font-size:13px}
+.btn{display:flex;justify-content:center;align-items:center;gap:8px;width:100%;padding:13px;border-radius:12px;border:1px solid var(--gold);color:var(--gold2);font-weight:600;font-size:14px;margin-top:10px}
+.btn.fill{background:var(--gold);color:#1a1408}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--mute);margin:4px 0 14px}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+/* plan */
+#plan svg{width:100%;height:auto;display:block}
+#plan .u{cursor:pointer;transition:opacity .2s}
+#plan .u:hover{opacity:.82}
+/* modal (tour / gallery / map / enquiry) */
+.modal{position:fixed;inset:0;z-index:40;background:rgba(5,5,4,.92);display:none;flex-direction:column}
+.modal.open{display:flex}
+.modal .mh{display:flex;justify-content:space-between;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 20px 14px;border-bottom:1px solid var(--line)}
+.modal .mh h3{font-family:"Cormorant Garamond",serif;font-size:26px;color:var(--gold2);font-weight:600}
+.modal .mb{flex:1;position:relative;min-height:0}
+#pano{position:absolute;inset:0}
+.rooms{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));display:flex;gap:6px;background:rgba(13,12,10,.65);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:999px;padding:5px;z-index:5}
+.rooms button{padding:8px 14px;border-radius:999px;font-size:12.5px;color:var(--mute)}
+.rooms button.on{background:var(--gold);color:#1a1408;font-weight:600}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:14px;overflow:auto;height:100%}
+.gallery img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;cursor:zoom-in;background:#111}
+#lightbox{position:fixed;inset:0;z-index:50;background:#000;display:none;align-items:center;justify-content:center}
+#lightbox.open{display:flex}
+#lightbox img{max-width:100%;max-height:100%}
+.mapwrap{position:absolute;inset:0;display:grid;grid-template-columns:1fr 340px}
+.mapwrap iframe{width:100%;height:100%;border:0;filter:grayscale(.15) contrast(1.05)}
+.mapside{padding:22px;border-left:1px solid var(--line);overflow:auto}
+.mapside h4{font-family:"Cormorant Garamond",serif;font-size:24px;color:var(--gold2);margin-bottom:8px}
+.mapside p{color:var(--mute);font-size:14px;line-height:1.6;margin-bottom:14px}
+form.enq{max-width:440px;margin:30px auto;padding:0 20px;display:flex;flex-direction:column;gap:10px}
+form.enq input,form.enq select,form.enq textarea{background:#14120e;border:1px solid var(--line);border-radius:10px;padding:13px;color:var(--cream);font:inherit}
+/* header extras, availability, shortlist, unit card */
+.hbtns{display:flex;gap:8px;align-items:center;transition:margin .45s cubic-bezier(.2,.8,.2,1)}
+@media (min-width:761px){body.sheet-open .hbtns{margin-right:min(420px,100vw)}}
+.pill{display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:999px;background:rgba(13,12,10,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);font-size:12.5px;color:var(--cream)}
+.pill.icon{width:38px;justify-content:center;padding:9px 0;font-size:15px}
+.pill b{font-weight:600;color:var(--gold2)}
+.pill .sw{width:28px;height:16px;border-radius:9px;background:rgba(244,236,220,.22);position:relative;transition:background .25s}
+.pill .sw:after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .25s}
+.pill.on .sw{background:var(--av)}.pill.on .sw:after{left:14px}
+.legend-av{position:fixed;left:22px;bottom:calc(22px + env(safe-area-inset-bottom));z-index:18;display:none;gap:12px;padding:9px 14px;border-radius:999px;background:rgba(13,12,10,.6);backdrop-filter:blur(12px);border:1px solid var(--line);font-size:12px;color:var(--mute)}
+.legend-av.on{display:flex}.legend-av i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.unit .fav{margin-left:8px;font-size:16px;color:var(--mute)}.unit .fav.on{color:#ff7a8a}
+#cmp{padding:18px;max-width:1100px;margin:0 auto}
+#cmp table{width:100%;border-collapse:collapse;font-size:14px}
+#cmp th,#cmp td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+#cmp th{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);font-weight:500}
+#cmp td b{color:var(--gold2)}
+#cmp .rm{color:var(--mute);font-size:18px}
+#cmp .empty{color:var(--mute);text-align:center;padding:60px 0;line-height:1.8}
+#uBody{max-width:980px;margin:0 auto;padding:18px;display:grid;grid-template-columns:1.2fr 1fr;gap:22px}
+#uBody .plan svg{width:100%;height:auto;background:#14120e;border-radius:14px;border:1px solid var(--line)}
+#uBody h4{font-family:"Cormorant Garamond",serif;font-size:28px;color:var(--gold2);margin-bottom:6px}
+#uBody .meta{color:var(--mute);margin-bottom:14px}
+#uBody ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+#uBody li{border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px}#uBody li span{display:block;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+#uBody .pay{font-size:13px;color:var(--mute);line-height:1.8;border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
+@media (max-width:760px){ .pill span{display:none} .pill{padding:8px 10px} #uBody{grid-template-columns:1fr} .legend-av{left:10px;bottom:calc(80px + env(safe-area-inset-bottom))} #cmp table{font-size:12px} }
+/* seamless entry */
+body.busy header,body.busy .dock,body.busy #rail,body.busy .hint,body.busy #stage{pointer-events:none}
+#mTour.pre{display:flex;opacity:0;pointer-events:none}
+#pano .pnlm-panorama-info{display:none!important}
+.tod{position:absolute;right:16px;bottom:16px;z-index:5;width:230px;padding:10px 14px 8px;background:rgba(13,12,10,.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;display:none}
+.tod.on{display:block}.tod small{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+.tod input{width:100%;accent-color:#e6c27a;margin:6px 0 2px}.tod .tl{display:flex;justify-content:space-between;font-size:10px;color:var(--mute)}.tod .tl span.na{opacity:.35}.tod .tl span.cur{color:var(--cream)}
+.hs-pill{cursor:pointer}.hs-pill>div{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;display:flex;align-items:center;gap:7px;padding:7px 12px 7px 8px;border-radius:999px;background:rgba(13,12,10,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(244,236,220,.28);color:#f4ecdc;font:500 12px/1 Inter,system-ui,sans-serif;letter-spacing:.02em;transition:background .2s}
+.hs-pill>div:hover{background:#e6c27a;color:#1a1408}.hs-pill i{width:18px;height:18px;border-radius:50%;background:#e6c27a;color:#1a1408;display:grid;place-items:center;font-style:normal;font-size:11px}
+.hs-info>div{opacity:.85;cursor:default}.hs-info i{background:transparent;border:1px solid #e6c27a;color:#e6c27a}
+#pinPine{position:fixed;z-index:12;transform:translate(-50%,-100%);display:none;cursor:pointer;background:none;border:0;padding:0}
+#pinPine span{display:flex;align-items:center;gap:6px;padding:6px 11px 6px 6px;border-radius:999px;background:rgba(13,12,10,.7);border:1px solid rgba(230,194,122,.7);color:#f4ecdc;font:500 11px/1 Inter,system-ui,sans-serif;white-space:nowrap;backdrop-filter:blur(8px)}
+#pinPine b{width:20px;height:20px;border-radius:50%;background:#e6c27a;color:#1a1408;display:grid;place-items:center;font-size:9px}
+#pinPine:after{content:"";display:block;width:2px;height:14px;margin:0 auto;background:linear-gradient(#e6c27a,transparent)}
+#pinPine b{animation:pp 2s infinite}@keyframes pp{0%{box-shadow:0 0 0 0 rgba(230,194,122,.7)}70%{box-shadow:0 0 0 10px rgba(230,194,122,0)}100%{box-shadow:0 0 0 0 rgba(230,194,122,0)}}
+body.present #pinPine,body.sheet-open #pinPine{display:none!important}
+#mTour.arrive{display:flex;animation:arrive 1.25s cubic-bezier(.3,.1,.2,1) forwards}
+@keyframes arrive{0%{opacity:0;filter:blur(14px);transform:scale(1.18)}55%{opacity:1}100%{opacity:1;filter:blur(0);transform:scale(1)}}
+#mTour.arrive .mh,#mTour.arrive .rooms{opacity:0;animation:fadeUi .6s 1.1s forwards}
+@keyframes fadeUi{to{opacity:1}}
+/* neighbourhood map */
+.nb{position:absolute;inset:0;background:#0b0b0b}
+#nbMap{position:absolute;inset:0}
+.nb .leaflet-container{background:#0b0b0b;font-family:Manrope,system-ui,sans-serif}
+.nb-card{position:absolute;z-index:500;top:14px;left:14px;display:flex;gap:12px;align-items:center;padding:8px 14px 8px 8px;border-radius:16px;background:rgba(13,12,10,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);max-width:min(360px,calc(100% - 28px))}
+.nb-card img{width:76px;height:52px;object-fit:cover;border-radius:10px}
+.nb-card small{display:block;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute)}
+.nb-card b{display:block;font-family:"Cormorant Garamond",serif;font-size:21px;color:var(--gold2);line-height:1.1}
+.nb-card span{font-size:12px;color:var(--mute)}
+.nb-search{position:absolute;z-index:500;top:14px;right:14px;display:flex;align-items:center;border-radius:999px;background:rgba(244,236,220,.16);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(244,236,220,.28);padding:4px 4px 4px 16px}
+.nb-search input{background:none;border:0;outline:0;color:var(--cream);font:inherit;font-size:13px;width:220px}
+.nb-search input::placeholder{color:rgba(244,236,220,.7)}
+.nb-search button{width:34px;height:34px;border-radius:50%;background:rgba(244,236,220,.22);display:grid;place-items:center}
+.nb-search svg,.nb-dock svg,.nb-list svg{width:18px;height:18px;fill:currentColor}
+.nb-tools{position:absolute;z-index:500;top:66px;right:14px;display:flex;flex-direction:column;gap:6px}
+.nb-tools button{min-width:42px;height:38px;padding:0 12px;border-radius:12px;background:rgba(13,12,10,.72);border:1px solid var(--line);font-size:12px;color:var(--cream)}
+.nb-list{position:absolute;z-index:500;top:116px;right:14px;bottom:96px;width:300px;display:flex;flex-direction:column;border-radius:18px;background:rgba(13,12,10,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);overflow:hidden}
+.nb-list h5{font-family:"Cormorant Garamond",serif;font-size:20px;color:var(--gold2);font-weight:600;padding:12px 16px 6px}
+#nbItems{overflow:auto;padding:0 8px 10px}
+#nbItems button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px;border-radius:12px}
+#nbItems button:hover{background:rgba(244,236,220,.07)}
+#nbItems i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--c);color:#14120e;flex:none}
+#nbItems i svg{width:16px;height:16px}
+#nbItems span{flex:1;min-width:0}
+#nbItems b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#nbItems small{display:block;font-size:11px;color:var(--mute);text-transform:capitalize}
+#nbItems em{font-style:normal;font-size:12.5px;text-align:right;color:var(--gold2);white-space:nowrap}
+.nb-empty{color:var(--mute);font-size:13px;padding:10px}
+.nb-dock{position:absolute;z-index:500;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));display:flex;gap:6px;padding:6px;border-radius:22px;background:rgba(13,12,10,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--line);max-width:calc(100% - 24px);overflow-x:auto;scrollbar-width:none}
+.nb-dock button{display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:16px;font-size:12.5px;color:var(--mute);white-space:nowrap;border:1px solid transparent}
+.nb-dock button svg{color:var(--c)}
+.nb-dock button em{font-style:normal;font-size:10.5px;opacity:.7}
+.nb-dock button.on{background:rgba(244,236,220,.1);color:var(--cream);border-color:var(--c)}
+.nb-pin span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.45)}
+.nb-pin svg{width:62%;height:62%;fill:#14120e}
+.nb-ring span{display:block;text-align:center;padding:4px 10px;border-radius:999px;background:rgba(40,52,110,.78);border:1px solid rgba(255,255,255,.5);color:#fff;font-weight:700;font-size:12px;letter-spacing:.04em;backdrop-filter:blur(6px)}
+.nb-site{position:relative}
+.nb-site svg{position:absolute;inset:0;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+.nb-site .pulse{position:absolute;left:50%;bottom:0;width:22px;height:22px;margin-left:-11px;margin-bottom:-11px;border-radius:50%;background:rgba(217,180,106,.55);animation:nbp 2s ease-out infinite}
+@keyframes nbp{0%{transform:scale(.4);opacity:1}100%{transform:scale(4);opacity:0}}
+.leaflet-tooltip.nb-tt{background:rgba(13,12,10,.88);color:var(--cream);border:1px solid var(--line);border-radius:10px;font-size:12px}
+.leaflet-tooltip.nb-tt:before{display:none}
+.nb-pop .leaflet-popup-content-wrapper{background:rgba(13,12,10,.92);color:var(--cream);border:1px solid var(--line);border-radius:14px}
+.nb-pop .leaflet-popup-tip{background:rgba(13,12,10,.92)}
+.nb-pop .leaflet-popup-content{margin:12px 14px}
+.nb-pop b{display:block;font-size:14px}.nb-pop small{display:block;color:var(--mute);text-transform:capitalize;margin:2px 0 6px}.nb-pop span{color:var(--gold2);font-weight:600}
+.nb .leaflet-control-attribution{background:rgba(13,12,10,.6);color:rgba(244,236,220,.6);font-size:9px}
+.nb .leaflet-control-attribution a{color:rgba(244,236,220,.75)}
+@media (max-width:760px){
+  .nb-card img{display:none}
+  .nb-search{top:auto;bottom:calc(84px + env(safe-area-inset-bottom));left:12px;right:12px}
+  .nb-search input{width:100%}
+  .nb-tools{top:auto;bottom:calc(140px + env(safe-area-inset-bottom));right:12px}
+  .nb-list{display:none}
+  .nb-dock{bottom:calc(14px + env(safe-area-inset-bottom));justify-content:flex-start}
+}
+/* loader */
+#loader{position:fixed;inset:0;z-index:60;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .8s}
+#loader b{font-family:"Cormorant Garamond",serif;font-size:42px;letter-spacing:.22em;color:var(--gold2);font-weight:600}
+#loader .bar{width:180px;height:2px;background:rgba(244,236,220,.12);overflow:hidden;border-radius:2px}
+#loader .bar i{display:block;height:100%;width:0;background:var(--gold);transition:width .3s}
+#loader small{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--mute)}
+@media (max-width:760px){
+  header{padding-left:14px;padding-right:14px}
+  .brand b{font-size:20px}.brand span{display:none}
+  nav.tabs{position:fixed;top:calc(58px + env(safe-area-inset-top));left:50%;transform:translateX(-50%)}
+  nav.tabs button{padding:7px 11px;font-size:11.5px}
+  .cta{padding:9px 14px;font-size:12px}
+  #pad{left:8px;top:auto;bottom:calc(86px + env(safe-area-inset-bottom));transform:none;grid-template-columns:repeat(3,15px);padding:7px;gap:3px}
+  #pad button{width:15px;height:15px}#pad small{display:none}
+  #pres{gap:8px;bottom:calc(12px + env(safe-area-inset-bottom))}#pres button{width:40px;height:40px}#pres .cap h4{font-size:15px}#pres .cap p{display:none}
+  #rail{right:8px;top:auto;bottom:calc(86px + env(safe-area-inset-bottom));transform:none;max-height:46vh}
+  #rail button{min-width:36px;padding:5px 6px;font-size:11px}
+  .dock button{padding:9px 12px;font-size:12px}
+  .dock .lab{display:none}
+  .sheet{top:auto;height:72vh;width:100vw;border-left:0;border-top:1px solid var(--line);border-radius:20px 20px 0 0;transform:translateY(105%)}
+  .mapwrap{grid-template-columns:1fr;grid-template-rows:1fr auto}
+  .mapside{border-left:0;border-top:1px solid var(--line);max-height:34vh}
+}
+</style>
+</head>
+<body>
+<div id="loader"><b>SKY TREE</b><div class="bar"><i id="lbar"></i></div><small>Pine Avenue · Lahore</small></div>
+
+<div id="stage"><canvas id="view"></canvas><div class="vignette"></div></div>
+
+<header>
+  <div class="brand"><b>SKY TREE TOWER</b><span>Pine Avenue · Lahore</span></div>
+  <nav class="tabs" id="tabs">
+    <button data-tab="explore" class="on">Explore</button>
+    <button data-tab="gallery">Gallery</button>
+    <button data-tab="location">Location</button>
+  </nav>
+  <div class="hbtns"><button class="pill" id="availBtn" title="Show availability on the building"><i class="sw"></i><span>Availability</span></button>
+  <button class="pill" id="listBtn" title="Your shortlist">♡<span> Shortlist</span> <b id="listN">0</b></button>
+  <button class="pill icon" id="shareBtn" title="Share this view">⤴</button>
+  <button class="cta" id="enquireBtn">Enquire</button></div>
+</header>
+
+<div id="rail"></div>
+<div id="pad" aria-label="Camera path"></div>
+<button id="pinPine" title="Stand on Pine Avenue (360°)"><span><b>360</b>Pine Avenue</span></button>
+<div id="pres"><button id="pPrev" title="Previous (←)">‹</button><div class="cap"><small id="pNum">1 / 8</small><h4 id="pTitle"></h4><p id="pNote"></p></div><button id="pNext" title="Next (→)">›</button><button class="x" id="pExit" title="Exit (Esc)">✕</button></div>
+<div id="tip"></div>
+<div class="legend-av" id="avLegend"><span><i style="background:var(--av)"></i>3–4 available</span><span><i style="background:var(--res)"></i>1–2 available</span><span><i style="background:var(--sold)"></i>Sold out</span><span style="opacity:.6">Sample data</span></div>
+<div class="hint" id="hint">Drag to rotate · Swipe up/down for height · Scroll or pinch to zoom</div>
+
+<div class="dock" id="dock">
+  <button id="modeDay" class="on" title="Golden hour">☀<span class="lab">Golden hour</span></button>
+  <button id="modeDusk" title="Dusk">☾<span class="lab">Dusk</span></button>
+  <span class="sep"></span>
+  <button id="viewBtn" title="Street level view">⌂<span class="lab">Street level</span></button>
+  <button id="explodeBtn" title="Explode floors">⇕<span class="lab">Explode floors</span></button>
+  <button id="presBtn" title="Presentation mode">▷<span class="lab">Present</span></button>
+  <span class="sep"></span>
+  <button id="tourBtn" title="Virtual tour">◎<span class="lab">Enter Residence 10-A</span></button>
+</div>
+
+<aside class="sheet" id="sheet">
+  <div class="hd"><div><small id="shKind">Residences</small><h2 id="shTitle">Floor 10</h2></div><button class="x" id="shClose">✕</button></div>
+  <div class="bd" id="shBody"></div>
+</aside>
+
+<video id="flyVid" muted playsinline preload="none" style="display:none"></video>
+<div class="modal" id="mTour"><div class="mh"><h3>Unit 10-A · Virtual Tour</h3><button class="x" data-close>✕</button></div>
+  <div class="mb"><div id="pano"></div><div class="rooms" id="rooms"></div><div class="tod" id="tod"><small>Lighting preview</small><input type="range" id="todR" min="0" max="3" step="1" value="1"><div class="tl"><span>Morning</span><span>Day</span><span>Sunset</span><span>Night</span></div></div></div></div>
+<div class="modal" id="mList"><div class="mh"><h3>Your shortlist</h3><button class="x" data-close>✕</button></div><div class="mb" style="overflow:auto"><div id="cmp"></div></div></div>
+<div class="modal" id="mUnit"><div class="mh"><h3 id="uTitle">Residence</h3><button class="x" data-close>✕</button></div><div class="mb" style="overflow:auto"><div id="uBody"></div></div></div>
+<div class="modal" id="mGallery"><div class="mh"><h3>Gallery</h3><button class="x" data-close>✕</button></div><div class="mb"><div class="gallery" id="gal"></div></div></div>
+<div class="modal" id="mLocation"><div class="mh"><h3>Neighbourhood</h3><button class="x" data-close>✕</button></div>
+  <div class="mb"><div id="nbHost" style="position:absolute;inset:0"></div></div></div>
+<div class="modal" id="mEnquire"><div class="mh"><h3>Register your interest</h3><button class="x" data-close>✕</button></div>
+  <div class="mb" style="overflow:auto"><form class="enq" id="enqForm">
+    <input required placeholder="Full name"><input required type="tel" placeholder="Phone / WhatsApp"><input type="email" placeholder="Email">
+    <select id="enqUnit"><option>Any residence</option></select><textarea rows="3" placeholder="Message"></textarea>
+    <button class="btn fill" type="submit">Request a call back</button><p id="enqOk" style="display:none;color:var(--av);text-align:center">Thank you, our sales team will contact you shortly.</p>
+  </form></div></div>
+<div id="lightbox"><img alt=""></div>
+
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js" defer></script>
+<script>
+(() => {
+const M = "media/";
+const LEVELS = [
+  {n:"G",kind:"Retail · Grand Lobby",use:"lobby"},{n:"1",kind:"Retail & Dining",use:"retail"},{n:"2",kind:"Club & Amenities",use:"amenity"},
+  ...Array.from({length:11},(_,i)=>({n:String(3+i),kind:"Residences",use:"res"})),
+  {n:"PH",kind:"Sky Penthouses",use:"ph"}];
+const ORBIT_N = 41, EXP_N = 36, START = 20;
+const UNITS = [ // typical residential floor (preview data)
+  {id:"A",beds:3,area:2150,price:"PKR 9.8 Cr"},{id:"B",beds:2,area:1480,price:"PKR 6.4 Cr"},
+  {id:"C",beds:2,area:1460,price:"PKR 6.3 Cr"},{id:"D",beds:3,area:2120,price:"PKR 9.6 Cr"}];
+const rnd = s => { let x = Math.sin(s * 99.13) * 43758.5453; return x - Math.floor(x); };
+function status(level, uid){ if (level===10 && uid==="A") return "av"; const r = rnd(level*7 + uid.charCodeAt(0)); return r<.5?"av":r<.72?"res":"sold"; }
+const ST = {av:["Available","var(--av)"],res:["Reserved","var(--res)"],sold:["Sold","var(--sold)"]};
+
+/* ---------- canvas + image cache ---------- */
+const cv = document.getElementById("view"), cx = cv.getContext("2d");
+const cache = new Map();
+function img(src){ if (cache.has(src)) return cache.get(src); const im = new Image(); im.decoding="async"; im.src = src;
+  const p = new Promise(r => { im.onload = () => r(im); im.onerror = () => r(null); }); const o = {im, p, ok:false}; p.then(v => o.ok = !!v); cache.set(src, o); return o; }
+const pad = i => String(i).padStart(3,"0");
+const SMALL = Math.min(screen.width, screen.height) < 820 && Math.max(innerWidth, innerHeight) < 1300;   // phones get 960 px frames
+// tall phones crop a 16:9 frame heavily (cover), so they need the full-size frames to stay sharp
+const SZ = SMALL && innerWidth > innerHeight ? "s/" : "";
+const PSZ = innerWidth > innerHeight && innerWidth * Math.min(devicePixelRatio || 1, 2) <= 1700 ? "s/" : "";   // 2560 path frames: 1600 px copy for small landscape screens
+/* 3 x 3 grid of rendered camera paths: height (g ground, m mid, h high) x distance (1 near, 2 mid, 3 far) */
+const HTS = ["g","m","h"], HT_N = {g:"Street",m:"Mid",h:"High"}, DS_N = ["Near","Mid","Far"];
+const PNEW = new Set();           // paths rendered at 2560 under media/p/<key>/ (from media/p/paths.json)
+const pathOK = k => PNEW.has(k) || k === "m2" || k === "g2";
+const isNew = () => PNEW.has(S.path);
+const src = (set, i) => set==="explode" ? `${M}explode/day/${SZ}e_${pad(i)}.webp`
+  : isNew() && set === "day" ? `${M}p/${S.path}/day/${PSZ}f_${pad(i)}.webp`
+  : S.path[0]==="g" ? `${M}ground/day/${SZ}g_${pad(i)}.webp` : `${M}orbit/${set}/${SZ}f_${pad(i)}.webp`;
+const msrc = (set, i) => set==="explode" ? `${M}explode/mask/e_${pad(i)}.png` : isNew() ? `${M}p/${S.path}/mask/f_${pad(i)}.png`
+  : S.path[0]==="g" ? `${M}ground/mask/g_${pad(i)}.png` : `${M}orbit/mask/f_${pad(i)}.png`;
+
+const S = { path:"m2", view:"aerial", mode:"day", frame:START, exp:0, exploded:false, anim:false, hover:-1, sel:-1, maskData:null, maskKey:"", maskW:0, maskH:0 };
+let dpr = Math.min(devicePixelRatio || 1, 2);
+function resize(){ dpr = Math.min(devicePixelRatio||1, 2); cv.width = innerWidth*dpr; cv.height = innerHeight*dpr; draw(); }
+addEventListener("resize", resize);
+
+function curSrc(){ return S.exploded || S.anim ? src("explode", S.exp) : src(S.mode, S.frame); }
+function curMask(){ return S.exploded || S.anim ? msrc("explode", S.exp) : msrc("orbit", S.frame); }
+let lastGood = null;
+const IW = el => el.naturalWidth || el.videoWidth || 1600, IH = el => el.naturalHeight || el.videoHeight || 900;
+function geom(im){ // full-bleed object-fit: cover on every screen; on tall phones keep the tower centred
+  const W = cv.width, H = cv.height, iw = IW(im), ih = IH(im);
+  const s = Math.max(W/iw, H/ih) * (W/H < 0.8 ? 1.06 : 1);
+  const w = iw*s, h = ih*s; const x = (W-w)/2, y = (H-h)/2 + (W/H < 0.8 ? h*0.015 : 0); return {x,y,w,h,s};
+}
+function draw(){
+  let im;
+  if (S.override){ im = S.override; }
+  else { const o = img(curSrc()); im = o.ok ? o.im : lastGood;
+    if (!o.ok) o.p.then(() => requestAnimationFrame(draw));
+    if (!im) return; if (o.ok) lastGood = o.im; }
+  const g = geom(im);
+  const fx = S.fx;
+  cx.save();
+  if (fx){ const ox = cv.width*fx.ox, oy = cv.height*fx.oy; if (fx.ty) cx.translate(0, fx.ty*cv.height); if (fx.a != null) cx.globalAlpha = fx.a; cx.translate(ox, oy); cx.scale(fx.k, fx.k); cx.translate(-ox, -oy);
+    if (fx.blur > 0.2) { try { cx.filter = `blur(${(fx.blur*dpr).toFixed(1)}px) brightness(${fx.br.toFixed(3)})`; } catch(e){} } }
+  drawFrame(im, g);
+  cx.restore();
+  if (S.override || fx) return;
+  drawOverlay(g);
+}
+function drawFrame(im, g){
+  cx.drawImage(im, g.x, g.y, g.w, g.h); try { pinSync(im); } catch(e){}
+
+}
+let avCanvas = document.createElement("canvas"), avKey = "";
+function floorAvail(i){ const L = LEVELS[i]; if (!L || L.use !== "res") return null; return UNITS.filter(u => status(+L.n, u.id) === "av").length; }
+function buildAV(){
+  const W = S.maskW, H = S.maskH, d = S.maskData; avCanvas.width = W; avCanvas.height = H;
+  const hc = avCanvas.getContext("2d"), out = hc.createImageData(W, H), o = out.data;
+  const col = LEVELS.map((_, i) => { const a = floorAvail(i); if (a === null) return null; return a >= 3 ? [127,209,160] : a >= 1 ? [224,179,90] : [212,115,106]; });
+  for (let k = 0; k < W*H; k++){ const r = d[k*4]; if (r < 8) continue; const l = Math.round(r/16)-1, c = col[l]; if (!c) continue;
+    o[k*4]=c[0]; o[k*4+1]=c[1]; o[k*4+2]=c[2]; o[k*4+3]=92; }
+  hc.putImageData(out, 0, 0);
+}
+let hlCanvas = document.createElement("canvas"), hlKey = "";
+/* smooth vector outlines (pre-traced from the masks): media/<set>/polys.json */
+const POLY = new Map();
+function polysFor(maskKey){ const m = maskKey.match(/^(.*)\/mask\/([^/]+)\.png$/); if (!m) return null;
+  const url = m[1] + "/polys.json?v=4"; let e = POLY.get(url);
+  if (!e){ e = {d:null}; POLY.set(url, e); fetch(url).then(r => r.ok ? r.json() : null).catch(() => null).then(j => { e.d = j || {}; draw(); }); }
+  return e.d ? (e.d[m[2]] || null) : null; }
+function polyPath(list, g){ const p = new Path2D();
+  for (const a of list){ for (let i = 0; i < a.length; i += 2){ const x = g.x + a[i] / 10000 * g.w, y = g.y + a[i+1] / 10000 * g.h; i ? p.lineTo(x, y) : p.moveTo(x, y); } p.closePath(); }
+  return p; }
+function drawOverlay(g){
+  const PL = polysFor(curMask());
+  if (PL){
+    if (S.avail) for (const l in PL){ const a = floorAvail(+l); if (a === null) continue;
+      cx.fillStyle = a >= 3 ? "rgba(127,209,160,.38)" : a >= 1 ? "rgba(224,179,90,.38)" : "rgba(212,115,106,.38)"; cx.fill(polyPath(PL[l], g)); }
+    const show = S.hover >= 0 ? S.hover : S.sel;
+    if (show >= 0 && PL[show]){ const p = polyPath(PL[show], g);
+      cx.save(); cx.fillStyle = show === S.sel ? "rgba(241,205,130,.34)" : "rgba(241,205,130,.26)"; cx.fill(p);
+      cx.lineJoin = "round"; cx.lineWidth = 1.6 * dpr; cx.strokeStyle = "rgba(255,226,160,.95)"; cx.shadowColor = "rgba(241,205,130,.8)"; cx.shadowBlur = 8 * dpr; cx.stroke(p); cx.restore(); }
+    return;
+  }
+  if (S.avail && S.maskData && S.maskKey === curMask()){
+    if (avKey !== S.maskKey){ buildAV(); avKey = S.maskKey; }
+    cx.drawImage(avCanvas, g.x, g.y, g.w, g.h);
+  }
+  const show = S.hover >= 0 ? S.hover : S.sel;
+  if (show >= 0 && S.maskData && S.maskKey === curMask()){
+    const key = S.maskKey + "|" + show + "|" + S.sel;
+    if (key !== hlKey){ buildHL(show); hlKey = key; }
+    cx.drawImage(hlCanvas, g.x, g.y, g.w, g.h);
+  }
+}
+function buildHL(level){
+  const W = S.maskW, H = S.maskH, d = S.maskData; hlCanvas.width = W; hlCanvas.height = H;
+  const hc = hlCanvas.getContext("2d"), out = hc.createImageData(W, H), o = out.data;
+  const lv = (x,y) => { const r = d[(y*W+x)*4]; return r < 8 ? -1 : Math.round(r/16)-1; };
+  const sel = level === S.sel;
+  for (let y=0; y<H; y++) for (let x=0; x<W; x++){
+    if (lv(x,y) !== level) continue; const i = (y*W+x)*4;
+    const edge = x===0||y===0||x===W-1||y===H-1||lv(x-1,y)!==level||lv(x+1,y)!==level||lv(x,y-1)!==level||lv(x,y+1)!==level;
+    o[i]=241;o[i+1]=205;o[i+2]=130;o[i+3]= edge ? 255 : (sel ? 105 : 80);
+  }
+  hc.putImageData(out,0,0);
+}
+function loadMask(){
+  const key = curMask(); if (S.maskKey === key && S.maskData) return;
+  const o = img(key);
+  o.p.then(im => { if (!im || curMask() !== key) return;
+    const c = document.createElement("canvas"); c.width = im.naturalWidth; c.height = im.naturalHeight;
+    const g = c.getContext("2d", {willReadFrequently:true}); g.imageSmoothingEnabled = false; g.drawImage(im,0,0);
+    S.maskData = g.getImageData(0,0,c.width,c.height).data; S.maskW = c.width; S.maskH = c.height; S.maskKey = key; hlKey=""; draw(); });
+}
+function levelAt(clientX, clientY){
+  if (!S.maskData || S.maskKey !== curMask() || !lastGood) return -1;
+  const g = geom(lastGood); const px = (clientX*dpr - g.x)/g.w, py = (clientY*dpr - g.y)/g.h;
+  if (px<0||py<0||px>=1||py>=1) return -1;
+  const x = Math.floor(px*S.maskW), y = Math.floor(py*S.maskH); const r = S.maskData[(y*S.maskW+x)*4];
+  return r < 8 ? -1 : Math.max(0, Math.min(LEVELS.length-1, Math.round(r/16)-1));
+}
+
+/* ---------- preloading ---------- */
+function preloadAll(onProgress){
+  const list = [];
+  for (let k=0;k<ORBIT_N;k++){ const i = (START + (k%2? -1:1)*Math.ceil(k/2) + ORBIT_N) % ORBIT_N; list.push(src("day", i)); }
+  let done = 0; const ps = list.map(s => img(s).p.then(() => onProgress(++done/list.length)));
+  return {first: img(list[0]).p, all: Promise.all(ps)};
+}
+function preloadSet(set, n){ for (let i=0;i<n;i++) img(set==="explode" ? src("explode", i) : src(set, i)); }
+
+/* ---------- interaction ---------- */
+const stage = document.getElementById("stage"), tip = document.getElementById("tip"), hint = document.getElementById("hint");
+let drag = null, moved = 0;
+const ptrs = new Map(); let pinch0 = 0;
+stage.addEventListener("pointerdown", e => { ptrs.set(e.pointerId, e); if (ptrs.size === 2){ const [a,b] = [...ptrs.values()]; pinch0 = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); drag = null; return; } drag = {x:e.clientX, y:e.clientY, f:S.frame, ax:""}; moved = 0; stage.setPointerCapture(e.pointerId); stage.classList.add("drag"); });
+stage.addEventListener("pointermove", e => {
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, e);
+  if (ptrs.size === 2 && pinch0 && !S.busyPath){ const [a,b] = [...ptrs.values()], d = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+    if (d / pinch0 > 1.3){ zoomStep(-1); pinch0 = 0; } else if (d / pinch0 < 0.77){ zoomStep(1); pinch0 = 0; } return; }
+  if (drag && !S.exploded && !S.anim){
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.ax && Math.hypot(dx, dy) > 12) drag.ax = Math.abs(dy) > Math.abs(dx) * 1.3 ? "y" : "x";
+    if (drag.ax === "y"){ moved = 99; if (Math.abs(dy) > 60 && !drag.done){ drag.done = 1; heightStep(dy < 0 ? -1 : 1); } return; }
+    moved = Math.max(moved, Math.abs(dx));
+    if (moved > 4){ const step = Math.max(14, innerWidth/ (ORBIT_N*1.1));
+      const f = Math.max(0, Math.min(ORBIT_N-1, drag.f - Math.round(dx/step)));
+      if (f !== S.frame){ S.frame = f; S.hover=-1; tip.style.opacity=0; loadMask(); draw(); hint.style.opacity=0; } }
+    return;
+  }
+  if (e.pointerType === "mouse"){ const l = levelAt(e.clientX, e.clientY); setHover(l, e.clientX, e.clientY); }
+});
+stage.addEventListener("pointercancel", e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = 0; });
+stage.addEventListener("pointerup", e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = 0; stage.classList.remove("drag");
+  if (drag && moved < 6){ const l = levelAt(e.clientX, e.clientY); if (l >= 0) select(l); else closeSheet(); }
+  drag = null; });
+stage.addEventListener("pointerleave", () => { if (!drag) setHover(-1); });
+function setHover(l, x, y){
+  if (l !== S.hover){ S.hover = l; draw(); railMark(); }
+  if (l >= 0){ const L = LEVELS[l]; tip.innerHTML = `<b>${l===0?"Ground":L.n==="PH"?"Penthouse":"Floor "+L.n}</b> · ${L.kind}`; tip.style.left = x+"px"; tip.style.top = y+"px"; tip.style.opacity = 1; stage.style.cursor="pointer"; }
+  else { tip.style.opacity = 0; stage.style.cursor=""; }
+}
+
+/* ---------- rail ---------- */
+const rail = document.getElementById("rail");
+LEVELS.forEach((L,i) => { const b = document.createElement("button"); b.textContent = L.n; b.dataset.i = i;
+  b.onmouseenter = () => { S.hover = i; draw(); }; b.onmouseleave = () => { S.hover = -1; draw(); };
+  b.onclick = () => select(i); rail.appendChild(b); });
+const rl = document.createElement("div"); rl.className = "lbl"; rl.textContent = "FLOORS"; rail.appendChild(rl);
+function railMark(){ [...rail.querySelectorAll("button")].forEach(b => { b.classList.toggle("sel", +b.dataset.i === S.sel); b.classList.toggle("hov", +b.dataset.i === S.hover); }); }
+
+/* ---------- sheet ---------- */
+const sheet = document.getElementById("sheet"), shBody = document.getElementById("shBody");
+document.getElementById("shClose").onclick = closeSheet;
+function closeSheet(){ sheet.classList.remove("open"); document.body.classList.remove("sheet-open"); S.sel = -1; railMark(); draw(); setHash(""); }
+function select(i){
+  S.sel = i; S.hover = -1; tip.style.opacity = 0; railMark(); draw();
+  const L = LEVELS[i];
+  document.getElementById("shKind").textContent = L.kind;
+  document.getElementById("shTitle").textContent = i===0 ? "Ground Floor" : L.n==="PH" ? "Penthouse Level" : `Floor ${L.n}`;
+  let h = "";
+  if (L.use === "res"){
+    const lvl = +L.n; const st = UNITS.map(u => status(lvl, u.id)); const avail = st.filter(s=>s==="av").length;
+    h += `<div class="kv"><div><span>Residences</span><b>${UNITS.length}</b></div><div><span>Available</span><b>${avail}</b></div><div><span>Sizes</span><b>1,460–2,150 sq ft</b></div><div><span>Ceiling</span><b>3.2 m</b></div></div>`;
+    h += `<div id="plan">${planSVG(lvl)}</div><div class="legend"><span><i style="background:var(--av)"></i>Available</span><span><i style="background:var(--res)"></i>Reserved</span><span><i style="background:var(--sold)"></i>Sold</span></div>`;
+    UNITS.forEach((u,k) => { const s = ST[st[k]];
+      h += `<button class="unit" data-u="${u.id}"><span class="dot" style="background:${s[1]}"></span><span class="n">${lvl}-${u.id}</span><span class="m">${u.beds} bed · ${u.area.toLocaleString()} sq ft</span><span class="p">${st[k]==="sold"?"Sold":u.price}</span><span class="fav ${isFav(lvl+"-"+u.id)?"on":""}" data-f="${lvl}-${u.id}">${isFav(lvl+"-"+u.id)?"♥":"♡"}</span></button>`; });
+    if (lvl === 10) h += `<button class="btn fill" id="shTour">◎ Step inside Residence 10-A</button>`;
+  } else if (L.use === "ph"){
+    h += `<div class="kv"><div><span>Penthouses</span><b>2</b></div><div><span>Terraces</span><b>Private</b></div><div><span>Sizes</span><b>4,800+ sq ft</b></div><div><span>Views</span><b>360°</b></div></div><p style="color:var(--mute);line-height:1.7">Two sky penthouses beneath the slate mansard crowns, each with private terraces and panoramic views across Lahore.</p>`;
+  } else {
+    const d = {lobby:"A double-height grand lobby framed by Corinthian colonnades, with flagship retail along the arcade.", retail:"Curated retail and dining overlooking Pine Avenue.", amenity:"Residents' club: gym, spa, lounge and the podium-roof garden with its two domed pavilions."}[L.use];
+    h += `<p style="color:var(--mute);line-height:1.7;margin-bottom:12px">${d}</p>`;
+  }
+  h += `<button class="btn" id="shEnq">Enquire about this floor</button>`;
+  shBody.innerHTML = h; sheet.classList.add("open"); document.body.classList.add("sheet-open");
+  shBody.querySelectorAll(".unit,.u").forEach(b => b.onclick = e => { const f = e.target.closest(".fav");
+    if (f){ e.stopPropagation(); toggleFav(f.dataset.f); f.classList.toggle("on", isFav(f.dataset.f)); f.textContent = isFav(f.dataset.f) ? "♥" : "♡"; return; }
+    unitClick(+L.n, b.dataset.u); });
+  setHash(`floor=${L.n}`);
+  const t = document.getElementById("shTour"); if (t) t.onclick = enterUnit;
+  document.getElementById("shEnq").onclick = () => openModal("mEnquire");
+}
+const VIEWS = {A:"Pine Avenue & sunset", B:"Pine Avenue", C:"Garden court", D:"Garden court & sunrise"};
+function unitClick(lvl, uid){
+  const u = UNITS.find(x=>x.id===uid), s = status(lvl, uid), key = `${lvl}-${uid}`;
+  document.getElementById("uTitle").textContent = `Residence ${key}`;
+  const px = parseFloat(u.price.replace(/[^0-9.]/g, "")) * (1 + (lvl - 3) * 0.012);
+  const price = `PKR ${px.toFixed(2)} Cr`;
+  document.getElementById("uBody").innerHTML = `<div class="plan">${unitPlanSVG(u)}</div><div>
+    <h4>${u.beds}-Bed Residence</h4><div class="meta">Floor ${lvl} · ${VIEWS[uid]} · <span style="color:${ST[s][1]}">${ST[s][0]}</span></div>
+    <ul><li><span>Covered area</span>${u.area.toLocaleString()} sq ft</li><li><span>Bedrooms</span>${u.beds} en-suite</li>
+    <li><span>Ceiling</span>3.2 m</li><li><span>Price</span>${s === "sold" ? "Sold" : price}</li></ul>
+    <div class="pay">Indicative plan: 20% booking · 40% over 36 monthly instalments · 40% on possession.<br>Preview data for this demo.</div>
+    ${lvl === 10 && uid === "A" ? `<button class="btn fill" id="uTour">◎ Step inside Residence 10-A</button>` : ""}
+    <button class="btn" id="uFav">${isFav(key) ? "♥ In your shortlist" : "♡ Add to shortlist"}</button>
+    <button class="btn" id="uEnq">Enquire about ${key}</button></div>`;
+  openModal("mUnit"); setHash(`unit=${key}`);
+  const t = document.getElementById("uTour"); if (t) t.onclick = () => { document.getElementById("mUnit").classList.remove("open"); enterUnit(); };
+  document.getElementById("uFav").onclick = e => { toggleFav(key); e.target.textContent = isFav(key) ? "♥ In your shortlist" : "♡ Add to shortlist"; if (S.sel >= 0) select(S.sel); };
+  document.getElementById("uEnq").onclick = () => { document.getElementById("mUnit").classList.remove("open"); openEnquiry(key); };
+}
+function unitPlanSVG(u){   // simple indicative layout drawn to scale
+  const big = u.beds === 3, W = big ? 520 : 440, H = 300;
+  const rooms = big ? [["Living & Dining",0,0,260,170],["Kitchen",260,0,120,110],["Master Bed",380,0,140,170],["Bed 2",260,110,120,120],["Bed 3",0,170,150,130],["Bath",150,170,60,60],["Bath",380,170,70,60],["Balcony",450,170,70,130],["Foyer",150,230,110,70]]
+                   : [["Living & Dining",0,0,230,170],["Kitchen",230,0,100,110],["Master Bed",330,0,110,170],["Bed 2",0,170,150,130],["Bath",150,170,60,70],["Foyer",210,170,120,130],["Balcony",330,170,110,130]];
+  return `<svg viewBox="-10 -10 ${W+20} ${H+20}">${rooms.map(([n,x,y,w,h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${n==="Balcony"?"#1d2a20":"#1b1814"}" stroke="#d9b46a" stroke-width="2"/>
+    <text x="${x+w/2}" y="${y+h/2}" fill="#f4ecdc" font-size="${w<80?10:13}" text-anchor="middle" dominant-baseline="middle" font-family="Manrope">${n}</text>`).join("")}</svg>`;
+}
+/* shortlist */
+const favs = new Set(JSON.parse((() => { try { return localStorage.getItem("st-favs") || "[]"; } catch(e){ return "[]"; } })()));
+const isFav = k => favs.has(k);
+function toggleFav(k){ favs.has(k) ? favs.delete(k) : favs.add(k); try { localStorage.setItem("st-favs", JSON.stringify([...favs])); } catch(e){}
+  document.getElementById("listN").textContent = favs.size; }
+function openList(){
+  const rows = [...favs].sort().map(k => { const [l, id] = k.split("-"), u = UNITS.find(x => x.id === id), s = status(+l, id);
+    const px = parseFloat(u.price.replace(/[^0-9.]/g, "")) * (1 + (+l - 3) * 0.012);
+    return `<tr><td><b>${k}</b></td><td>${u.beds} bed</td><td>${u.area.toLocaleString()} sq ft</td><td>Floor ${l}</td><td>${VIEWS[id]}</td>
+      <td style="color:${ST[s][1]}">${ST[s][0]}</td><td>${s==="sold"?"—":"PKR "+px.toFixed(2)+" Cr"}</td><td><button class="rm" data-k="${k}">✕</button></td></tr>`; }).join("");
+  document.getElementById("cmp").innerHTML = favs.size ? `<table><tr><th>Unit</th><th>Type</th><th>Area</th><th>Level</th><th>View</th><th>Status</th><th>Price</th><th></th></tr>${rows}</table>
+    <button class="btn fill" id="listEnq" style="max-width:340px;margin:22px auto 0">Enquire about these ${favs.size}</button>`
+    : `<p class="empty">Tap ♡ on any residence to compare it here.<br>Open a floor from the building or the floor list to begin.</p>`;
+  document.querySelectorAll("#cmp .rm").forEach(b => b.onclick = () => { toggleFav(b.dataset.k); openList(); });
+  const e = document.getElementById("listEnq"); if (e) e.onclick = () => openEnquiry([...favs].join(", "));
+  openModal("mList");
+}
+document.getElementById("listBtn").onclick = openList;
+document.getElementById("listN").textContent = favs.size;
+function openEnquiry(what){ const sel = document.getElementById("enqUnit"); if (what){ let o = [...sel.options].find(x => x.textContent.startsWith(what));
+    if (!o){ o = document.createElement("option"); o.textContent = what; sel.appendChild(o); } sel.value = o.textContent; } openModal("mEnquire"); }
+/* availability */
+document.getElementById("availBtn").onclick = e => { S.avail = !S.avail; e.currentTarget.classList.toggle("on", S.avail);
+  document.getElementById("avLegend").classList.toggle("on", S.avail); avKey = ""; draw(); };
+/* share + deep links */
+function setHash(h){ try { history.replaceState(null, "", h ? "#" + h : location.pathname); } catch(e){} }
+document.getElementById("shareBtn").onclick = async () => { const url = location.href;
+  try { if (navigator.share) await navigator.share({title:"Sky Tree Tower", url}); else { await navigator.clipboard.writeText(url); toast("Link copied"); } } catch(e){} };
+function applyHash(){ const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get("view") === "street") setView("street");
+  if (h.get("path") && pathOK(h.get("path"))) goPath(h.get("path"), "auto", h.get("f") != null ? +h.get("f") : undefined);
+  if (h.get("present")) presEnter();
+  if (h.get("floor")){ const i = LEVELS.findIndex(L => L.n === h.get("floor")); if (i >= 0) select(i); }
+  if (h.get("unit")){ const [l, id] = h.get("unit").split("-"); const i = LEVELS.findIndex(L => L.n === l); if (i >= 0){ select(i); unitClick(+l, id); } }
+  if (h.get("tab") === "location") tabs.querySelector("[data-tab=location]").click();
+  if (h.get("tour")) setTimeout(enterUnit, 600);
+  if (h.get("enquire")) setTimeout(() => openEnquiry(), 400); }
+function planSVG(lvl){
+  // schematic typical floor: two wings + centre core (preview plan)
+  const c = id => ST[status(lvl,id)][1];
+  return `<svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" font-family="Manrope" font-size="11">
+  <rect x="6" y="6" width="388" height="248" rx="8" fill="none" stroke="rgba(232,214,170,.25)"/>
+  <g class="u" data-u="A"><rect x="18" y="18" width="130" height="110" rx="4" fill="${c("A")}" fill-opacity=".22" stroke="${c("A")}"/><text x="83" y="70" text-anchor="middle" fill="#f4ecdc" font-weight="600">${lvl}-A</text><text x="83" y="88" text-anchor="middle" fill="rgba(244,236,220,.6)">3 bed · 2,150</text></g>
+  <g class="u" data-u="B"><rect x="18" y="134" width="130" height="108" rx="4" fill="${c("B")}" fill-opacity=".22" stroke="${c("B")}"/><text x="83" y="185" text-anchor="middle" fill="#f4ecdc" font-weight="600">${lvl}-B</text><text x="83" y="203" text-anchor="middle" fill="rgba(244,236,220,.6)">2 bed · 1,480</text></g>
+  <g class="u" data-u="C"><rect x="252" y="134" width="130" height="108" rx="4" fill="${c("C")}" fill-opacity=".22" stroke="${c("C")}"/><text x="317" y="185" text-anchor="middle" fill="#f4ecdc" font-weight="600">${lvl}-C</text><text x="317" y="203" text-anchor="middle" fill="rgba(244,236,220,.6)">2 bed · 1,460</text></g>
+  <g class="u" data-u="D"><rect x="252" y="18" width="130" height="110" rx="4" fill="${c("D")}" fill-opacity=".22" stroke="${c("D")}"/><text x="317" y="70" text-anchor="middle" fill="#f4ecdc" font-weight="600">${lvl}-D</text><text x="317" y="88" text-anchor="middle" fill="rgba(244,236,220,.6)">3 bed · 2,120</text></g>
+  <rect x="160" y="40" width="80" height="180" rx="4" fill="rgba(244,236,220,.05)" stroke="rgba(232,214,170,.3)"/>
+  <text x="200" y="120" text-anchor="middle" fill="rgba(244,236,220,.55)">Lifts</text><text x="200" y="136" text-anchor="middle" fill="rgba(244,236,220,.55)">& Lobby</text>
+  <text x="200" y="250" text-anchor="middle" fill="rgba(244,236,220,.4)" font-size="9">PINE AVENUE ↓</text></svg>`;
+}
+let toastT; function toast(t){ let el = document.getElementById("toast"); if (!el){ el = document.createElement("div"); el.id="toast";
+  el.style.cssText="position:fixed;left:50%;top:calc(90px + env(safe-area-inset-top));transform:translateX(-50%);z-index:45;background:rgba(13,12,10,.9);border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-size:13px;transition:opacity .3s"; document.body.appendChild(el); }
+  el.textContent = t; el.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(()=>el.style.opacity=0, 2600); }
+
+/* ---------- modes + explode ---------- */
+const bDay = document.getElementById("modeDay"), bDusk = document.getElementById("modeDusk"), bExp = document.getElementById("explodeBtn");
+function setMode(m){ if (S.exploded) toggleExplode(); S.mode = m; bDay.classList.toggle("on", m==="day"); bDusk.classList.toggle("on", m==="dusk"); preloadSet(m, ORBIT_N); draw(); }
+bDay.onclick = () => setMode("day"); bDusk.onclick = async () => { if (S.path !== "m2") await goPath("m2", "in"); setMode("dusk"); };
+const bView = document.getElementById("viewBtn");
+async function crossfade(change, ms=520){
+  const snap = document.createElement("canvas"); snap.width = cv.width; snap.height = cv.height; snap.getContext("2d").drawImage(cv, 0, 0);
+  change(); await img(curSrc()).p; const t0 = performance.now();
+  await new Promise(done => { const step = () => { const t = Math.min(1, (performance.now() - t0) / ms); draw();
+      cx.save(); cx.globalAlpha = 1 - t * t * (3 - 2 * t); cx.drawImage(snap, 0, 0); cx.restore();
+      if (t < 1) requestAnimationFrame(step); else { draw(); done(); } }; requestAnimationFrame(step); });
+}
+async function setView(v){
+  if (v === S.view) return;
+  if (S.exploded) await toggleExplode();
+  await crossfade(() => { S.view = v; S.path = v === "street" ? "g2" : "m2"; padSync(); if (v === "street" && S.mode !== "day"){ S.mode = "day"; bDay.classList.add("on"); bDusk.classList.remove("on"); }
+    S.hover = -1; S.maskKey = ""; loadMask(); });
+  bView.classList.toggle("on", v === "street"); bView.querySelector(".lab").textContent = v === "street" ? "Aerial view" : "Street level";
+  bView.firstChild.textContent = v === "street" ? "✈" : "⌂";
+  preloadSet(S.mode, ORBIT_N);
+}
+bView.onclick = () => setView(S.view === "street" ? "aerial" : "street");
+bExp.onclick = toggleExplode;
+async function toggleExplode(){
+  if (S.anim) return;
+  if (S.view === "street" && !S.exploded) await setView("aerial"); S.anim = true; S.hover = -1; tip.style.opacity = 0;
+  const opening = !S.exploded; bExp.classList.toggle("on", opening);
+  bExp.querySelector(".lab").textContent = opening ? "Close explode" : "Explode floors";
+  const frames = [...Array(EXP_N).keys()]; if (!opening) frames.reverse();
+  await Promise.all(frames.slice(0,8).map(i => img(src("explode", i)).p)); preloadSet("explode", EXP_N);
+  for (const i of frames){ S.exp = i; const o = img(src("explode", i)); await Promise.race([o.p, new Promise(r=>setTimeout(r,400))]); draw(); await new Promise(r=>setTimeout(r, 42)); }
+  S.exploded = opening; S.anim = false; S.maskKey = ""; loadMask(); draw();
+}
+
+/* ---------- tour ---------- */
+/* rooms: labels anchored to where each opening actually is in the rendered panoramas (yaw in degrees) */
+const ROOMS = [
+  {id:"living", t:"Living & Dining", yaw:0, links:[{to:"view", yaw:88, pitch:-2, t:"Balcony view"}, {to:"bedroom", yaw:-150, pitch:-6, t:"Master bedroom"}],
+   info:[{yaw:0, pitch:-4, t:"Kitchen & dining"}]},
+  {id:"bedroom", t:"Master Bedroom", yaw:20, links:[{to:"living", yaw:126, pitch:-4, t:"Living & dining"}, {to:"view", yaw:88, pitch:2, t:"Balcony view"}], info:[]},
+  {id:"view", t:"Balcony · Floor 10", yaw:0, links:[{to:"living", yaw:-158, pitch:-4, t:"Back inside"}, {to:"pine", yaw:0, pitch:-28, t:"Down to Pine Avenue"}], info:[]},
+  {id:"terrace", t:"Terrace Garden", yaw:0, links:[{to:"rooftop", yaw:0, pitch:48, t:"Up to the rooftop garden"}, {to:"pine", yaw:180, pitch:-30, t:"Down to Pine Avenue"}], info:[{yaw:0, pitch:-8, t:"Skylight & flower court"}]},
+  {id:"rooftop", t:"Rooftop Garden", yaw:180, links:[{to:"terrace", yaw:90, pitch:-40, t:"Down to the terrace garden"}], info:[{yaw:180, pitch:-12, t:"Sky lounge · Pine Avenue below"}]},
+  {id:"pine", t:"Pine Avenue", yaw:0, links:[{to:"view", yaw:-14, pitch:24, t:"Up to Residence 10-A"}], info:[{yaw:12, pitch:6, t:"Sky Tree Tower"}]}];
+const LOOKS = ["morning","day","sunset","night"];
+let viewer = null, PV = null, LOOK = "day", tourRoom = "living";
+const pvReady = fetch(`${M}pano/variants.json`, {cache:"no-cache"}).then(r => r.ok ? r.json() : null).catch(() => null)
+  .then(j => (PV = j || {living:["day"], bedroom:["day"], view:["day"]})); pvReady.then(() => draw());
+const roomOK = id => !!(PV && PV[id]);
+const lookFor = (room, look) => (PV[room] || ["day"]).includes(look) ? look : "day";
+const sceneId = (room, look) => look === "day" ? room : room + "@" + look;
+function pill(div, a){ div.classList.add("hs-pill"); if (a.info) div.classList.add("hs-info");
+  const d = document.createElement("div"); d.innerHTML = `<i>${a.info ? "i" : "➜"}</i>${a.t}`; div.appendChild(d); }
+function goRoom(room, keepView){ if (!roomOK(room)) return; tourRoom = room; const id = sceneId(room, lookFor(room, LOOK));
+  if (keepView) viewer.loadScene(id, viewer.getPitch(), viewer.getYaw(), viewer.getHfov()); else viewer.loadScene(id); todSync(); }
+function todSync(){ const t = document.getElementById("tod"), av = PV[tourRoom] || ["day"]; t.classList.toggle("on", av.length > 1);
+  const cur = lookFor(tourRoom, LOOK); document.getElementById("todR").value = LOOKS.indexOf(cur);
+  t.querySelectorAll(".tl span").forEach((sp, k) => { sp.classList.toggle("na", !av.includes(LOOKS[k])); sp.classList.toggle("cur", LOOKS[k] === cur); }); }
+document.getElementById("todR").addEventListener("input", e => { let k = +e.target.value; const av = PV[tourRoom] || ["day"];
+  if (!av.includes(LOOKS[k])){ for (let d = 1; d < 4; d++){ if (av.includes(LOOKS[k+d])){ k += d; break; } if (av.includes(LOOKS[k-d])){ k -= d; break; } } }
+  LOOK = LOOKS[k]; goRoom(tourRoom, true); });
+async function openTour(arrive, silent, start){
+  if (!silent) openModal("mTour");
+  await pvReady;
+  if (viewer){ if (start && start !== tourRoom) goRoom(start); else if (arrive && !silent){ goRoom("living"); viewer.setHfov(55, 0); setTimeout(() => viewer.setHfov(100, 1600), 700); } return; }
+  if (!window.pannellum) return;
+  const scenes = {};
+  ROOMS.filter(r => roomOK(r.id)).forEach(r => (PV[r.id] || ["day"]).forEach(look => {
+    scenes[sceneId(r.id, look)] = {title:r.t, panorama:`${M}pano/${look === "day" ? r.id : r.id + "@" + look}.jpg`, yaw:r.yaw, hfov:100, autoLoad:true,
+      hotSpots: [...r.links.filter(l => roomOK(l.to)).map(l => ({pitch:l.pitch, yaw:l.yaw, createTooltipFunc:pill, createTooltipArgs:{t:l.t},
+        clickHandlerFunc:() => goRoom(l.to)})), ...r.info.map(a => ({pitch:a.pitch, yaw:a.yaw, createTooltipFunc:pill, createTooltipArgs:{t:a.t, info:1}}))]}; }));
+  tourRoom = start && roomOK(start) ? start : "living";
+  const first = sceneId(tourRoom, lookFor(tourRoom, LOOK)); if (arrive) scenes[first].hfov = 48;
+  viewer = pannellum.viewer("pano", {default:{firstScene:first, sceneFadeDuration:700, autoRotate:-1.5, showControls:false}, scenes});
+  if (arrive && !silent) viewer.on("load", function once(){ viewer.off("load", once); viewer.setHfov(100, 1800); });
+  const rb = document.getElementById("rooms"); rb.innerHTML = "";
+  const list = ROOMS.filter(r => roomOK(r.id));
+  list.forEach(r => { const b = document.createElement("button"); b.textContent = r.t; b.dataset.r = r.id; b.onclick = () => goRoom(r.id); rb.appendChild(b); });
+  viewer.on("scenechange", id => { tourRoom = id.split("@")[0]; rb.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.r === tourRoom)); todSync(); });
+  rb.querySelector(`[data-r="${tourRoom}"]`)?.classList.add("on"); todSync();
+}
+/* Pine Avenue 360 pin, projected from the real camera of the current frame */
+const CAMS = { orbit:{r:237.7, h:78.4, tz:45, lens:32}, ground:{r:118, h:7, tz:40, lens:22},
+  g1:{r:95,h:5.5,tz:40,lens:19}, g2:{r:130,h:6.5,tz:39,lens:24}, g3:{r:180,h:15,tz:40,lens:30}, m1:{r:150,h:40,tz:40,lens:24}, m2:{r:237.7,h:78.4,tz:45,lens:32},
+  m3:{r:380,h:110,tz:40,lens:36}, h1:{r:160,h:150,tz:30,lens:24}, h2:{r:260,h:220,tz:30,lens:30}, h3:{r:420,h:330,tz:25,lens:36} };
+const BCX = -158, BCY = -5.5;
+function project(wx, wy, wz, im){ const c = isNew() ? CAMS[S.path] : S.path[0] === "g" ? CAMS.ground : CAMS.orbit; if (!c || !im) return null;
+  const az = (-100 + 5 * S.frame) * Math.PI / 180, P = [BCX + Math.sin(az) * c.r, BCY - Math.cos(az) * c.r, c.h];
+  const f = norm([BCX - P[0], BCY - P[1], c.tz - P[2]]), rt = norm([f[1], -f[0], 0]), up = [rt[1]*f[2] - rt[2]*f[1], rt[2]*f[0] - rt[0]*f[2], rt[0]*f[1] - rt[1]*f[0]];
+  const d = [wx - P[0], wy - P[1], wz - P[2]], z = dot(d, f); if (z < 1) return null;
+  const iw = IW(im), ih = IH(im), fx = c.lens / 36 * iw, u = iw / 2 + dot(d, rt) / z * fx, v = ih / 2 - dot(d, up) / z * fx;
+  const g = geom(im); return [(g.x + u * g.s) / dpr, (g.y + v * g.s) / dpr]; }
+function norm(a){ const l = Math.hypot(...a); return a.map(x => x / l); } function dot(a, b){ return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+const pin = document.getElementById("pinPine");
+function pinSync(im){ const ok = PV && PV.pine && !S.exploded && !S.anim && !S.busyPath && !S.override && S.frame >= 6 && S.frame <= 34;
+  const p = ok ? project(BCX + 45, -70.5, 16, im) : null;
+  if (!p || p[0] < 90 || p[0] > innerWidth - 100 || p[1] < 80 || p[1] > innerHeight - 64){ pin.style.display = "none"; return; }
+  pin.style.display = "block"; pin.style.left = p[0] + "px"; pin.style.top = p[1] + "px"; }
+pin.onclick = () => openTour(false, false, "pine");
+window.SkyTree = { openTour, goPath, presEnter: () => presEnter() };
+document.getElementById("tourBtn").onclick = enterUnit;
+
+/* ---------- seamless entry: orbit -> rendered flight (drawn on the same canvas) -> 360 tour ---------- */
+const flyVid = document.getElementById("flyVid");
+const FLY_SRC = `${M}flyin/${SMALL ? "flyin_s" : "flyin"}.mp4`;
+let flyOK = null, entering = false;
+function probeFly(){ if (flyOK !== null) return Promise.resolve(flyOK);
+  return fetch(FLY_SRC, {method:"HEAD"}).then(r => (flyOK = r.ok)).catch(() => (flyOK = false)); }
+function primeFly(){ probeFly().then(ok => { if (ok && !flyVid.src){ flyVid.src = FLY_SRC; flyVid.preload = "auto"; flyVid.load(); } }); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+async function spinTo(target){   // eased glide along the rendered orbit to the flight's first frame
+  const from = S.frame, n = Math.abs(target - from); if (!n) return;
+  for (let k = 0; k <= n; k++) img(src(S.mode, from + Math.sign(target - from) * k));
+  const dur = Math.min(1600, 260 + n * 70), t0 = performance.now();
+  await new Promise(done => { const step = async () => {
+      const t = Math.min(1, (performance.now() - t0) / dur), f = Math.round(from + (target - from) * ease(t));
+      if (f !== S.frame){ S.frame = f; } draw();
+      if (t < 1) requestAnimationFrame(step); else done(); }; requestAnimationFrame(step); });
+  S.maskKey = ""; loadMask();
+}
+function animateFx(dur, from, to, ox, oy){ return new Promise(done => { const t0 = performance.now();
+  const step = () => { const t = Math.min(1, (performance.now() - t0) / dur), e = t * t * (3 - 2 * t);
+    S.fx = { k: from.k + (to.k - from.k) * e, blur: from.blur + (to.blur - from.blur) * e, br: from.br + (to.br - from.br) * e, ox, oy };
+    draw(); if (t < 1) requestAnimationFrame(step); else done(); }; requestAnimationFrame(step); }); }
+function prepTour(){   // build the 360 viewer now, invisibly, so the room is loaded by the time we arrive
+  const m = document.getElementById("mTour"); m.classList.add("pre");
+  if (!viewer && window.pannellum) openTour(true, true);
+  else if (viewer){ viewer.loadScene("living", 0, 0, 48); }
+}
+async function enterUnit(){
+  if (entering) return; entering = true;
+  if (S.exploded) await toggleExplode();
+  closeSheet(); S.hover = -1; tip.style.opacity = 0; document.body.classList.add("busy");
+  prepTour();
+  if (S.path !== "m2") await crossfade(() => { S.view = "aerial"; S.path = "m2"; S.maskKey = ""; padSync(); }, 600);
+  const ok = (await probeFly()) && S.mode === "day";
+  if (ok && !flyVid.src){ flyVid.src = FLY_SRC; flyVid.preload = "auto"; flyVid.load(); }
+  await spinTo(START);
+  let ox = .5, oy = .5;
+  if (ok){
+    await new Promise(r => { if (flyVid.readyState >= 3) r(); else { flyVid.addEventListener("canplay", r, {once:true}); setTimeout(r, 4000); } });
+    flyVid.currentTime = 0;
+    let started = false;
+    try { await flyVid.play(); started = true; } catch(e){}
+    if (started){
+      S.override = flyVid;
+      await new Promise(r => { const tick = () => { draw();
+          if (flyVid.ended || flyVid.currentTime >= flyVid.duration - 0.9) r(); else requestAnimationFrame(tick); }; tick(); });
+      // keep the film running underneath while we push through the glass
+      const keep = () => { if (S.override === flyVid){ draw(); requestAnimationFrame(keep); } }; requestAnimationFrame(keep);
+    }
+  } else { ox = .47; oy = .30; }
+  arrive();
+  await animateFx(ok ? 1100 : 1400, {k:1, blur:0, br:1}, {k: ok ? 1.45 : 2.3, blur: 16, br: 1.25}, ox, oy);
+  await sleep(250);
+  S.override = null; S.fx = null; flyVid.pause(); draw();
+  bView.classList.remove("on"); bView.querySelector(".lab").textContent = "Street level"; bView.firstChild.textContent = "⌂";
+  document.body.classList.remove("busy"); entering = false;
+}
+function arrive(){
+  const m = document.getElementById("mTour");
+  m.classList.remove("pre"); m.classList.add("open", "arrive");
+  if (viewer){ try { viewer.setHfov(100, 2400); } catch(e){} }
+  setTimeout(() => m.classList.remove("arrive"), 1900);
+}
+setTimeout(primeFly, 4000);
+
+/* ---------- modals, tabs ---------- */
+function openModal(id){ document.getElementById(id).classList.add("open"); }
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => { b.closest(".modal").classList.remove("open","pre","arrive"); setTab("explore"); });
+const tabs = document.getElementById("tabs");
+function setTab(t){ tabs.querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.tab===t)); }
+tabs.onclick = e => { const t = e.target.closest("button")?.dataset.tab; if (!t) return; setTab(t);
+  document.querySelectorAll(".modal").forEach(m=>m.classList.remove("open"));
+  if (t==="gallery"){ openModal("mGallery"); buildGallery(); }
+  if (t==="location"){ openModal("mLocation"); openMap(); } };
+let mapLoading = null;
+function loadScript(u){ return new Promise((ok, no) => { const s = document.createElement("script"); s.src = u; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
+async function openMap(){
+  const host = document.getElementById("nbHost");
+  if (!mapLoading){ const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(l);
+    mapLoading = loadScript("https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js").then(() => loadScript("neighbourhood.js?v=3")); }
+  try { await mapLoading; window.SkyTreeMap.open(host); } catch(e){ host.innerHTML = '<p style="padding:30px;color:var(--mute)">The map needs an internet connection.</p>'; }
+}
+document.getElementById("enquireBtn").onclick = () => openModal("mEnquire");
+document.getElementById("enqForm").onsubmit = e => { e.preventDefault(); document.getElementById("enqOk").style.display="block"; };
+const enqU = document.getElementById("enqUnit"); for (let l=3;l<=13;l++) UNITS.forEach(u => { const o = document.createElement("option"); o.textContent = `${l}-${u.id} · ${u.beds} bed`; enqU.appendChild(o); });
+const STILLS = ["front_day","aerial_day","corner_day","front_dusk","front_night","corner_night"];
+function buildGallery(){ const g = document.getElementById("gal"); if (g.children.length) return;
+  STILLS.forEach(s => { const im = document.createElement("img"); im.loading="lazy"; im.src = `${M}stills/s/${s}.webp`; im.dataset.full = `${M}stills/${s}.webp`; im.alt = s.replace("_"," ");
+    im.onerror = () => im.remove(); im.onclick = () => { const lb = document.getElementById("lightbox"); lb.querySelector("img").src = im.dataset.full; lb.classList.add("open"); }; g.appendChild(im); }); }
+document.getElementById("lightbox").onclick = e => e.currentTarget.classList.remove("open");
+addEventListener("keydown", e => { if (e.key==="Escape"){ document.querySelectorAll(".modal.open").forEach(m=>m.classList.remove("open")); document.getElementById("lightbox").classList.remove("open"); setTab("explore"); }
+  if (document.body.classList.contains("present")){ if (e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"){ e.preventDefault(); presGo(1); } else if (e.key==="ArrowLeft"||e.key==="PageUp"){ e.preventDefault(); presGo(-1); } else if (e.key==="Escape") presExit(); return; }
+  if (document.querySelector(".modal.open")) return;
+  if (e.key==="ArrowUp"||e.key==="ArrowDown"){ e.preventDefault(); heightStep(e.key==="ArrowUp" ? 1 : -1); }
+  if (e.key==="+"||e.key==="="||e.key==="-"||e.key==="_") zoomStep(e.key==="-"||e.key==="_" ? 1 : -1);
+  if (e.key==="ArrowLeft"||e.key==="ArrowRight"){ if (!S.exploded){ S.frame = Math.max(0, Math.min(ORBIT_N-1, S.frame + (e.key==="ArrowLeft"?1:-1))); loadMask(); draw(); } } });
+
+/* ---------- path grid: swipe for height, zoom for distance ---------- */
+const padEl = document.getElementById("pad");
+function padBuild(){ padEl.innerHTML = "<b>VIEW</b>";
+  for (const h of ["h","m","g"]) for (let d = 1; d <= 3; d++){ const k = h + d, b = document.createElement("button");
+    b.dataset.k = k; b.title = `${HT_N[h]} · ${DS_N[d-1]}`; b.disabled = !pathOK(k); b.onclick = () => goPath(k, "auto"); padEl.appendChild(b); }
+  padEl.insertAdjacentHTML("beforeend", '<small id="padLab"></small>'); padSync(); }
+function padSync(){ padEl.querySelectorAll("button").forEach(b => { b.classList.toggle("on", b.dataset.k === S.path); b.disabled = !pathOK(b.dataset.k); });
+  const l = document.getElementById("padLab"); if (l) l.textContent = `${HT_N[S.path[0]]} · ${DS_N[+S.path[1]-1]}`; }
+function heightStep(dir){ const h = HTS.indexOf(S.path[0]), d = S.path[1];
+  for (let n = h + dir; n >= 0 && n < 3; n += dir){ const k = HTS[n] + d; if (pathOK(k)) return goPath(k, dir > 0 ? "up" : "down"); }
+  for (let n = h + dir; n >= 0 && n < 3; n += dir) for (const dd of [2,1,3]){ const k = HTS[n] + dd; if (pathOK(k)) return goPath(k, dir > 0 ? "up" : "down"); } }
+function zoomStep(dir){ const h = S.path[0], d = +S.path[1];
+  for (let n = d + dir; n >= 1 && n <= 3; n += dir){ const k = h + n; if (pathOK(k)) return goPath(k, dir < 0 ? "in" : "out"); } }
+async function goPath(k, kind="auto", frame){
+  if (S.busyPath || S.anim || !pathOK(k) || (k === S.path && (frame == null || frame === S.frame))) return;
+  if (S.exploded) await toggleExplode();
+  if (kind === "auto"){ const a = S.path, dh = HTS.indexOf(k[0]) - HTS.indexOf(a[0]), dd = +k[1] - +a[1];
+    kind = dd < 0 ? "in" : dd > 0 ? "out" : dh > 0 ? "up" : dh < 0 ? "down" : "in"; }
+  S.busyPath = true; S.hover = -1; tip.style.opacity = 0;
+  const snap = document.createElement("canvas"); snap.width = cv.width; snap.height = cv.height; snap.getContext("2d").drawImage(cv, 0, 0);
+  S.path = k; S.view = k[0] === "g" ? "street" : "aerial"; if (frame != null) S.frame = frame;
+  if (S.mode !== "day" && k !== "m2"){ S.mode = "day"; bDay.classList.add("on"); bDusk.classList.remove("on"); }
+  padSync(); await Promise.race([img(curSrc()).p, new Promise(r => setTimeout(r, 2500))]);
+  const ms = 620, t0 = performance.now(), W = cv.width, H = cv.height;
+  await new Promise(done => { const step = () => {
+    const t = Math.min(1, (performance.now() - t0) / ms), e = t * t * (3 - 2 * t);
+    let sk = 1, sy = 0, nk = 1, ny = 0;
+    if (kind === "in"){ sk = 1 + 0.35 * e; nk = 0.86 + 0.14 * e; } else if (kind === "out"){ sk = 1 - 0.22 * e; nk = 1.25 - 0.25 * e; }
+    else if (kind === "up"){ sy = 0.18 * e; ny = -0.12 * (1 - e); } else { sy = -0.18 * e; ny = 0.12 * (1 - e); }
+    S.fx = {k:nk, ox:.5, oy:.55, blur:0, br:1, ty:ny}; draw(); S.fx = null;
+    cx.save(); cx.globalAlpha = 1 - e; cx.translate(0, sy * H); cx.translate(W/2, H*.55); cx.scale(sk, sk); cx.translate(-W/2, -H*.55); cx.drawImage(snap, 0, 0); cx.restore();
+    if (t < 1) requestAnimationFrame(step); else done(); }; requestAnimationFrame(step); });
+  S.busyPath = false; S.maskKey = ""; loadMask(); draw(); preloadSet(S.mode, ORBIT_N);
+  setHash(k === "m2" ? "" : "path=" + k + (frame != null ? "&f=" + frame : ""));
+}
+let wheelAcc = 0, wheelT = 0;
+stage.addEventListener("wheel", e => { e.preventDefault(); if (S.busyPath || S.anim) return;
+  const now = performance.now(); if (now - wheelT > 300) wheelAcc = 0; wheelT = now; wheelAcc += e.deltaY * (e.ctrlKey ? 4 : 1);
+  if (Math.abs(wheelAcc) > 80){ zoomStep(wheelAcc < 0 ? -1 : 1); wheelAcc = 0; wheelT = now + 500; } }, {passive:false});
+
+/* ---------- presentation mode ---------- */
+const SPOTS = [
+  {k:"h3", f:20, t:"Pine Avenue landmark", n:"The tower in its setting: the boulevard, the neighbourhood and the skyline."},
+  {k:"h2", f:14, t:"Approach from the boulevard", n:"Direct frontage on Pine Avenue with a private forecourt."},
+  {k:"m3", f:28, t:"The skyline view", n:"Twin piers and the sky-garden crown read from across the city."},
+  {k:"m2", f:20, t:"Signature facade", n:"Limestone piers, bronze glazing and the SKY TREE crest."},
+  {k:"m1", f:8,  t:"The east elevation", n:"Balconies, the HF emblem and the residents' drive."},
+  {k:"g3", f:20, t:"Arrival on Pine Avenue", n:"Landscaped boundary wall, palms and gated entries."},
+  {k:"g2", f:26, t:"The forecourt", n:"Paved plaza, drop-off and visitor parking."},
+  {k:"g1", f:20, t:"Grand entrance", n:"Double-height lobby beneath the tower."}];
+let pIdx = 0; const presSpots = () => SPOTS.filter(s => pathOK(s.k));
+function presShow(){ const L = presSpots(), s = L[pIdx]; document.getElementById("pNum").textContent = `${pIdx+1} / ${L.length}`;
+  document.getElementById("pTitle").textContent = s.t; document.getElementById("pNote").textContent = s.n; }
+async function presGo(dir, to){ const L = presSpots(); if (S.busyPath || S.anim) return;
+  pIdx = to != null ? to : (pIdx + dir + L.length) % L.length; const s = L[pIdx]; presShow();
+  if (s.k === S.path){ await spinTo(s.f); } else await goPath(s.k, "auto", s.f); }
+function presEnter(){ if (S.exploded) toggleExplode(); closeSheet(); document.body.classList.add("present"); presGo(0, 0);
+  try { if (!document.fullscreenElement && innerWidth > 760) document.documentElement.requestFullscreen(); } catch(e){} }
+function presExit(){ document.body.classList.remove("present"); try { if (document.fullscreenElement) document.exitFullscreen(); } catch(e){} }
+document.getElementById("presBtn").onclick = presEnter;
+document.getElementById("pPrev").onclick = () => presGo(-1); document.getElementById("pNext").onclick = () => presGo(1);
+document.getElementById("pExit").onclick = presExit;
+fetch(M + "p/paths.json", {cache:"no-cache"}).then(r => r.ok ? r.json() : []).catch(() => []).then(a => { (a || []).forEach(k => PNEW.add(k)); padBuild();
+  if (PNEW.has("m2")){ S.maskKey = ""; loadMask(); draw(); } });
+padBuild();
+
+/* ---------- boot ---------- */
+resize();
+const bar = document.getElementById("lbar");
+const pl = preloadAll(p => bar.style.width = (p*100).toFixed(0) + "%");
+pl.first.then(() => { draw(); loadMask(); setTimeout(() => { const l = document.getElementById("loader"); l.style.opacity = 0; setTimeout(()=>l.remove(), 800); }, 450); setTimeout(applyHash, 700); });
+pl.all.then(() => { preloadSet("dusk", ORBIT_N); setTimeout(()=>preloadSet("explode", EXP_N), 1500); });
+setTimeout(() => hint.style.opacity = 0, 6000);
+})();
+</script>
+</body>
+</html>

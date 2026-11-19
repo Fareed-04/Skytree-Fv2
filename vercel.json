@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": null,
+  "framework": null,
+  "outputDirectory": "public",
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/", "destination": "/skytree/site.html" },
+    { "source": "/skytree", "destination": "/skytree/index.html" },
+    { "source": "/skytree/home", "destination": "/skytree/site.html" }
+  ],
+  "headers": [
+    { "source": "/skytree/media/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }] }
+  ]
+}

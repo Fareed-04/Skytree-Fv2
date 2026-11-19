@@ -1,0 +1,32 @@
+{
+  "$comment": "Free CC0 assets from Poly Haven for the Sky Tree Tower renders and splat captures. fetch_assets.py downloads them into render/assets/. Resolutions are the maximum to fetch; the script falls back to the largest available below it.",
+  "hdris": {
+    "resolution": "8k",
+    "items": {
+      "day":        ["kloppenheim_05_puresky", "kloofendal_48d_partly_cloudy_puresky", "kloofendal_38d_partly_cloudy_puresky"],
+      "golden":     ["qwantani_late_afternoon_puresky", "kloppenheim_06_puresky"],
+      "dusk":       ["belfast_sunset_puresky", "industrial_sunset_puresky", "table_mountain_1_puresky"],
+      "night":      ["qwantani_night_puresky", "rogland_moonlit_night"]
+    }
+  },
+  "textures": {
+    "resolution": "4k",
+    "items": [
+      "beige_wall_001", "beige_wall_002", "white_sandstone_blocks_02", "plaster_stone_wall_01",
+      "marble_01", "granite_tile", "granite_tile_02",
+      "roof_slates_02", "roof_slates_03",
+      "hexagonal_concrete_paving", "herringbone_pavement_03", "rectangular_paving", "precast_stone_paving",
+      "asphalt_02", "asphalt_04", "concrete_pavement_02",
+      "leafy_grass", "grass_ground", "sparse_grass", "aerial_grass_rock"
+    ]
+  },
+  "models": {
+    "resolution": "2k",
+    "items": [
+      "jacaranda_tree", "tree_small_02", "island_tree_01", "island_tree_02", "island_tree_03",
+      "shrub_01", "shrub_02", "shrub_03", "shrub_04",
+      "grass_medium_02", "flower_gazania", "flower_empodium", "periwinkle_plant",
+      "pachira_aquatica_01", "potted_plant_01", "potted_plant_02"
+    ]
+  }
+}
