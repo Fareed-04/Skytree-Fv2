@@ -300,7 +300,7 @@ const LEVELS = [
   {n:"G",kind:"Retail · Grand Lobby",use:"lobby"},{n:"1",kind:"Retail & Dining",use:"retail"},{n:"2",kind:"Club & Amenities",use:"amenity"},
   ...Array.from({length:11},(_,i)=>({n:String(3+i),kind:"Residences",use:"res"})),
   {n:"PH",kind:"Sky Penthouses",use:"ph"}];
-const ORBIT_N = 41, EXP_N = 36, START = 20;
+const ORBIT_N = 81, EXP_N = 36, START = 40;   // 81 rendered views per path, 2.5 deg apart
 const UNITS = [ // typical residential floor (preview data)
   {id:"A",beds:3,area:2150,price:"PKR 9.8 Cr"},{id:"B",beds:2,area:1480,price:"PKR 6.4 Cr"},
   {id:"C",beds:2,area:1460,price:"PKR 6.3 Cr"},{id:"D",beds:3,area:2120,price:"PKR 9.6 Cr"}];
@@ -343,7 +343,21 @@ function geom(im){ // full-bleed object-fit: cover on every screen; on tall phon
   const s = Math.max(W/iw, H/ih) * (W/H < 0.8 ? 1.06 : 1);
   const w = iw*s, h = ih*s; const x = (W-w)/2, y = (H-h)/2 + (W/H < 0.8 ? h*0.015 : 0); return {x,y,w,h,s};
 }
+let rq = 0; const reqDraw = () => { if (!rq) rq = requestAnimationFrame(() => { rq = 0; draw(); }); };
+function drawBlend(){   // between two rendered views: cross-dissolve the neighbours so a swipe glides instead of stepping
+  const N = ORBIT_N, f = Math.max(0, Math.min(N - 1, S.fpos)), a = Math.floor(f), b = Math.min(N - 1, a + 1), t = f - a;
+  const oa = img(src(S.mode, a)), ob = img(src(S.mode, b));
+  if (!oa.ok) oa.p.then(reqDraw); if (!ob.ok) ob.p.then(reqDraw);
+  let base = oa.ok ? oa.im : ob.ok ? ob.im : null;
+  for (let d = 1; !base && d < N; d++) for (const j of [a - d, b + d]) { if (j >= 0 && j < N){ const o = img(src(S.mode, j)); if (o.ok){ base = o.im; break; } } }
+  if (!base) return false;
+  const g = geom(base); cx.drawImage(base, g.x, g.y, g.w, g.h);
+  if (oa.ok && ob.ok && t > 0.02 && t < 0.98){ cx.save(); cx.globalAlpha = t; cx.drawImage(ob.im, g.x, g.y, g.w, g.h); cx.restore(); }
+  else if (oa.ok && ob.ok && t >= 0.98) cx.drawImage(ob.im, g.x, g.y, g.w, g.h);
+  lastGood = base; pin.style.display = "none"; return true;
+}
 function draw(){
+  if (S.moving && !S.override && !S.fx && !S.exploded && !S.anim && drawBlend()) return;
   let im;
   if (S.override){ im = S.override; }
   else { const o = img(curSrc()); im = o.ok ? o.im : lastGood;
@@ -436,17 +450,36 @@ function levelAt(clientX, clientY){
 /* ---------- preloading ---------- */
 function preloadAll(onProgress){
   const list = [];
-  for (let k=0;k<ORBIT_N;k++){ const i = (START + (k%2? -1:1)*Math.ceil(k/2) + ORBIT_N) % ORBIT_N; list.push(src("day", i)); }
+  for (const i of frameOrder()) list.push(src("day", i));
   let done = 0; const ps = list.map(s => img(s).p.then(() => onProgress(++done/list.length)));
   return {first: img(list[0]).p, all: Promise.all(ps)};
 }
-function preloadSet(set, n){ for (let i=0;i<n;i++) img(set==="explode" ? src("explode", i) : src(set, i)); }
+function frameOrder(){   // coarse-to-fine: every 8th view first (interactive fast on phones), then fill in 4th, 2nd, all
+  const out = [], seen = new Set();
+  for (const s of [8, 4, 2, 1]) for (let k = 0; k < ORBIT_N * 2; k++){ const i = START + (k % 2 ? -1 : 1) * Math.ceil(k / 2);
+    if (i < 0 || i >= ORBIT_N || i % s || seen.has(i)) continue; seen.add(i); out.push(i); }
+  return out; }
+function preloadSet(set, n){ if (set === "explode"){ for (let i=0;i<n;i++) img(src("explode", i)); return; } for (const i of frameOrder()) if (i < n) img(src(set, i)); }
 
 /* ---------- interaction ---------- */
 const stage = document.getElementById("stage"), tip = document.getElementById("tip"), hint = document.getElementById("hint");
 let drag = null, moved = 0;
 const ptrs = new Map(); let pinch0 = 0;
-stage.addEventListener("pointerdown", e => { ptrs.set(e.pointerId, e); if (ptrs.size === 2){ const [a,b] = [...ptrs.values()]; pinch0 = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); drag = null; return; } drag = {x:e.clientX, y:e.clientY, f:S.frame, ax:""}; moved = 0; stage.setPointerCapture(e.pointerId); stage.classList.add("drag"); });
+let glideRaf = 0;
+function glide(v){   // momentum after a fling, then settle exactly on the nearest rendered view (masks + outlines line up)
+  cancelAnimationFrame(glideRaf); v = Math.max(-0.22, Math.min(0.22, v || 0)); let last = performance.now();
+  const settleFrom = now0 => { const from = S.fpos, to = Math.round(from);
+    const settle = n2 => { const t = Math.min(1, (n2 - now0) / 170), e = t * (2 - t); S.fpos = from + (to - from) * e; draw();
+      if (t < 1) glideRaf = requestAnimationFrame(settle); else { S.fpos = to; S.frame = to; S.moving = false; loadMask(); draw(); } };
+    glideRaf = requestAnimationFrame(settle); };
+  const stepF = now => { const dt = Math.min(40, now - last); last = now;
+    S.fpos += v * dt; v *= Math.exp(-dt / 280);
+    if (S.fpos <= 0 || S.fpos >= ORBIT_N - 1){ S.fpos = Math.max(0, Math.min(ORBIT_N - 1, S.fpos)); v = 0; }
+    S.frame = Math.round(S.fpos);
+    if (Math.abs(v) > 0.002){ draw(); glideRaf = requestAnimationFrame(stepF); } else settleFrom(now); };
+  glideRaf = requestAnimationFrame(stepF); }
+stage.addEventListener("pointerdown", e => { ptrs.set(e.pointerId, e); if (ptrs.size === 2){ const [a,b] = [...ptrs.values()]; pinch0 = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); drag = null; return; }
+  cancelAnimationFrame(glideRaf); drag = {x:e.clientX, y:e.clientY, f:S.moving ? S.fpos : S.frame, ax:"", v:0, lt:0}; moved = 0; stage.setPointerCapture(e.pointerId); stage.classList.add("drag"); });
 stage.addEventListener("pointermove", e => {
   if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, e);
   if (ptrs.size === 2 && pinch0 && !S.busyPath){ const [a,b] = [...ptrs.values()], d = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
@@ -456,16 +489,19 @@ stage.addEventListener("pointermove", e => {
     if (!drag.ax && Math.hypot(dx, dy) > 12) drag.ax = Math.abs(dy) > Math.abs(dx) * 1.3 ? "y" : "x";
     if (drag.ax === "y"){ moved = 99; if (Math.abs(dy) > 60 && !drag.done){ drag.done = 1; heightStep(dy < 0 ? -1 : 1); } return; }
     moved = Math.max(moved, Math.abs(dx));
-    if (moved > 4){ const step = Math.max(14, innerWidth/ (ORBIT_N*1.1));
-      const f = Math.max(0, Math.min(ORBIT_N-1, drag.f - Math.round(dx/step)));
-      if (f !== S.frame){ S.frame = f; S.hover=-1; tip.style.opacity=0; loadMask(); draw(); hint.style.opacity=0; } }
+    if (moved > 4){ const step = Math.max(7, innerWidth / (ORBIT_N * 1.1)), now = performance.now();
+      const fp = Math.max(0, Math.min(ORBIT_N - 1, drag.f - dx / step));
+      if (drag.lt){ const dt = now - drag.lt; if (dt > 0) drag.v = 0.65 * drag.v + 0.35 * ((fp - (S.fpos ?? fp)) / dt); }
+      drag.lt = now; S.moving = true; S.fpos = fp; S.frame = Math.round(fp);
+      if (S.hover !== -1){ S.hover = -1; tip.style.opacity = 0; } hint.style.opacity = 0; reqDraw(); }
     return;
   }
   if (e.pointerType === "mouse"){ const l = levelAt(e.clientX, e.clientY); setHover(l, e.clientX, e.clientY); }
 });
 stage.addEventListener("pointercancel", e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = 0; });
 stage.addEventListener("pointerup", e => { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch0 = 0; stage.classList.remove("drag");
-  if (drag && moved < 6){ const l = levelAt(e.clientX, e.clientY); if (l >= 0) select(l); else closeSheet(); }
+  if (drag && moved < 6 && !S.moving){ const l = levelAt(e.clientX, e.clientY); if (l >= 0) select(l); else closeSheet(); }
+  if (drag && S.moving) glide(performance.now() - drag.lt < 90 ? drag.v : 0);
   drag = null; });
 stage.addEventListener("pointerleave", () => { if (!drag) setHover(-1); });
 function setHover(l, x, y){
@@ -681,14 +717,14 @@ const CAMS = { orbit:{r:237.7, h:78.4, tz:45, lens:32}, ground:{r:118, h:7, tz:4
   m3:{r:380,h:110,tz:40,lens:36}, h1:{r:160,h:150,tz:30,lens:24}, h2:{r:260,h:220,tz:30,lens:30}, h3:{r:420,h:330,tz:25,lens:36} };
 const BCX = -158, BCY = -5.5;
 function project(wx, wy, wz, im){ const c = isNew() ? CAMS[S.path] : S.path[0] === "g" ? CAMS.ground : CAMS.orbit; if (!c || !im) return null;
-  const az = (-100 + 5 * S.frame) * Math.PI / 180, P = [BCX + Math.sin(az) * c.r, BCY - Math.cos(az) * c.r, c.h];
+  const az = (-100 + 200 / (ORBIT_N - 1) * S.frame) * Math.PI / 180, P = [BCX + Math.sin(az) * c.r, BCY - Math.cos(az) * c.r, c.h];
   const f = norm([BCX - P[0], BCY - P[1], c.tz - P[2]]), rt = norm([f[1], -f[0], 0]), up = [rt[1]*f[2] - rt[2]*f[1], rt[2]*f[0] - rt[0]*f[2], rt[0]*f[1] - rt[1]*f[0]];
   const d = [wx - P[0], wy - P[1], wz - P[2]], z = dot(d, f); if (z < 1) return null;
   const iw = IW(im), ih = IH(im), fx = c.lens / 36 * iw, u = iw / 2 + dot(d, rt) / z * fx, v = ih / 2 - dot(d, up) / z * fx;
   const g = geom(im); return [(g.x + u * g.s) / dpr, (g.y + v * g.s) / dpr]; }
 function norm(a){ const l = Math.hypot(...a); return a.map(x => x / l); } function dot(a, b){ return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
 const pin = document.getElementById("pinPine");
-function pinSync(im){ const ok = PV && PV.pine && !S.exploded && !S.anim && !S.busyPath && !S.override && S.frame >= 6 && S.frame <= 34;
+function pinSync(im){ const ok = PV && PV.pine && !S.exploded && !S.anim && !S.busyPath && !S.override && S.frame >= 12 && S.frame <= 68;
   const p = ok ? project(BCX + 45, -70.5, 16, im) : null;
   if (!p || p[0] < 90 || p[0] > innerWidth - 100 || p[1] < 80 || p[1] > innerHeight - 64){ pin.style.display = "none"; return; }
   pin.style.display = "block"; pin.style.left = p[0] + "px"; pin.style.top = p[1] + "px"; }
@@ -708,12 +744,11 @@ const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
 async function spinTo(target){   // eased glide along the rendered orbit to the flight's first frame
   const from = S.frame, n = Math.abs(target - from); if (!n) return;
   for (let k = 0; k <= n; k++) img(src(S.mode, from + Math.sign(target - from) * k));
-  const dur = Math.min(1600, 260 + n * 70), t0 = performance.now();
+  const dur = Math.min(1600, 260 + n * 35), t0 = performance.now(); S.moving = true;
   await new Promise(done => { const step = async () => {
-      const t = Math.min(1, (performance.now() - t0) / dur), f = Math.round(from + (target - from) * ease(t));
-      if (f !== S.frame){ S.frame = f; } draw();
+      const t = Math.min(1, (performance.now() - t0) / dur); S.fpos = from + (target - from) * ease(t); S.frame = Math.round(S.fpos); draw();
       if (t < 1) requestAnimationFrame(step); else done(); }; requestAnimationFrame(step); });
-  S.maskKey = ""; loadMask();
+  S.moving = false; S.frame = target; S.fpos = target; draw(); S.maskKey = ""; loadMask();
 }
 function animateFx(dur, from, to, ox, oy){ return new Promise(done => { const t0 = performance.now();
   const step = () => { const t = Math.min(1, (performance.now() - t0) / dur), e = t * t * (3 - 2 * t);
@@ -792,7 +827,7 @@ addEventListener("keydown", e => { if (e.key==="Escape"){ document.querySelector
   if (document.querySelector(".modal.open")) return;
   if (e.key==="ArrowUp"||e.key==="ArrowDown"){ e.preventDefault(); heightStep(e.key==="ArrowUp" ? 1 : -1); }
   if (e.key==="+"||e.key==="="||e.key==="-"||e.key==="_") zoomStep(e.key==="-"||e.key==="_" ? 1 : -1);
-  if (e.key==="ArrowLeft"||e.key==="ArrowRight"){ if (!S.exploded){ S.frame = Math.max(0, Math.min(ORBIT_N-1, S.frame + (e.key==="ArrowLeft"?1:-1))); loadMask(); draw(); } } });
+  if (e.key==="ArrowLeft"||e.key==="ArrowRight"){ if (!S.exploded){ S.frame = Math.max(0, Math.min(ORBIT_N-1, S.frame + (e.key==="ArrowLeft"?2:-2))); loadMask(); draw(); } } });
 
 /* ---------- path grid: swipe for height, zoom for distance ---------- */
 const padEl = document.getElementById("pad");
@@ -814,6 +849,7 @@ async function goPath(k, kind="auto", frame){
     kind = dd < 0 ? "in" : dd > 0 ? "out" : dh > 0 ? "up" : dh < 0 ? "down" : "in"; }
   S.busyPath = true; S.hover = -1; tip.style.opacity = 0;
   const snap = document.createElement("canvas"); snap.width = cv.width; snap.height = cv.height; snap.getContext("2d").drawImage(cv, 0, 0);
+  cancelAnimationFrame(glideRaf); S.moving = false;
   S.path = k; S.view = k[0] === "g" ? "street" : "aerial"; if (frame != null) S.frame = frame;
   if (S.mode !== "day" && k !== "m2"){ S.mode = "day"; bDay.classList.add("on"); bDusk.classList.remove("on"); }
   padSync(); await Promise.race([img(curSrc()).p, new Promise(r => setTimeout(r, 2500))]);
@@ -836,14 +872,14 @@ stage.addEventListener("wheel", e => { e.preventDefault(); if (S.busyPath || S.a
 
 /* ---------- presentation mode ---------- */
 const SPOTS = [
-  {k:"h3", f:20, t:"Pine Avenue landmark", n:"The tower in its setting: the boulevard, the neighbourhood and the skyline."},
-  {k:"h2", f:14, t:"Approach from the boulevard", n:"Direct frontage on Pine Avenue with a private forecourt."},
-  {k:"m3", f:28, t:"The skyline view", n:"Twin piers and the sky-garden crown read from across the city."},
-  {k:"m2", f:20, t:"Signature facade", n:"Limestone piers, bronze glazing and the SKY TREE crest."},
-  {k:"m1", f:8,  t:"The east elevation", n:"Balconies, the HF emblem and the residents' drive."},
-  {k:"g3", f:20, t:"Arrival on Pine Avenue", n:"Landscaped boundary wall, palms and gated entries."},
-  {k:"g2", f:26, t:"The forecourt", n:"Paved plaza, drop-off and visitor parking."},
-  {k:"g1", f:20, t:"Grand entrance", n:"Double-height lobby beneath the tower."}];
+  {k:"h3", f:40, t:"Pine Avenue landmark", n:"The tower in its setting: the boulevard, the neighbourhood and the skyline."},
+  {k:"h2", f:28, t:"Approach from the boulevard", n:"Direct frontage on Pine Avenue with a private forecourt."},
+  {k:"m3", f:56, t:"The skyline view", n:"Twin piers and the sky-garden crown read from across the city."},
+  {k:"m2", f:40, t:"Signature facade", n:"Limestone piers, bronze glazing and the SKY TREE crest."},
+  {k:"m1", f:16,  t:"The east elevation", n:"Balconies, the HF emblem and the residents' drive."},
+  {k:"g3", f:40, t:"Arrival on Pine Avenue", n:"Landscaped boundary wall, palms and gated entries."},
+  {k:"g2", f:52, t:"The forecourt", n:"Paved plaza, drop-off and visitor parking."},
+  {k:"g1", f:40, t:"Grand entrance", n:"Double-height lobby beneath the tower."}];
 let pIdx = 0; const presSpots = () => SPOTS.filter(s => pathOK(s.k));
 function presShow(){ const L = presSpots(), s = L[pIdx]; document.getElementById("pNum").textContent = `${pIdx+1} / ${L.length}`;
   document.getElementById("pTitle").textContent = s.t; document.getElementById("pNote").textContent = s.n; }

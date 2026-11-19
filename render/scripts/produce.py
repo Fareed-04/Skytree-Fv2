@@ -195,7 +195,7 @@ def make_cam(name, lens):
     o = bpy.data.objects.get(name) or bpy.data.objects.new(name, cd)
     if o.name not in scene.collection.objects: scene.collection.objects.link(o)
     return o
-ORBIT = {"radius": 240.0, "elev_deg": 8.0, "target_z": 45.0, "lens": 32.0, "az0": -100.0, "step": 5.0, "count": 41}
+ORBIT = {"radius": 240.0, "elev_deg": 8.0, "target_z": 45.0, "lens": 32.0, "az0": -100.0, "step": 2.5, "count": 81}   # 2.5 deg steps: smooth swipes
 def orbit_pose(i):
     az = math.radians(ORBIT["az0"] + i * ORBIT["step"]); el = math.radians(ORBIT["elev_deg"])
     d = Vector((math.sin(az) * math.cos(el), -math.cos(az) * math.cos(el), math.sin(el)))
@@ -236,10 +236,11 @@ def srgb_to_lin(c):
     return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
 
 hidden_for_mask = []
-def _interior_vis(on):
-    c = bpy.data.collections.get("interior_v1")
-    if c:
-        for o in c.all_objects: o.hide_render = not on
+def _interior_vis(on, extra=()):
+    for cn in ("interior_v1",) + tuple(extra):
+        c = bpy.data.collections.get(cn)
+        if c:
+            for o in c.all_objects: o.hide_render = not on
 def mask_setup(on):
     """Workbench, flat object colours, no AA: red channel encodes the level."""
     global hidden_for_mask
@@ -288,14 +289,14 @@ def do_orbit(kind, mode=None):
         if render_to(p): log(f"orbit {kind} {i:03d}: {time.time() - t:.0f}s")
 
 def do_explode(kind):
-    _interior_vis(False)   # the floors fly apart; the lobby dressing and backing shells stay out of it
+    _interior_vis(False, ("facade_v2",))   # the floors fly apart; the lobby dressing, backing shells and new podium stone stay out of it
     loc, tgt = explode_pose(); look(cam, loc, tgt); cam.data.lens = EXPL["lens"]
     for f in range(1, EXPL["frames"] + 1):
         scene.frame_set(f)
         p = os.path.join(OUT, "explode", kind, f"e_{f - 1:03d}." + ("png" if kind == "mask" else "jpg"))
         t = time.time()
         if render_to(p): log(f"explode {kind} {f - 1:03d}: {time.time() - t:.0f}s")
-    scene.frame_set(1); cam.data.lens = ORBIT["lens"]; _interior_vis(kind != "mask")
+    scene.frame_set(1); cam.data.lens = ORBIT["lens"]; _interior_vis(kind != "mask", ("facade_v2",)) if kind != "mask" else None
 
 # ---------------------------------------------------------------- car paint: Lahore palette (white / silver / black / grey)
 import re as _re
@@ -1577,8 +1578,9 @@ PATHS = {   # radius (horizontal), camera height, look-at height, lens
     "g1": (95.0, 5.5, 40.0, 19.0), "g2": (130.0, 6.5, 39.0, 24.0), "g3": (180.0, 15.0, 40.0, 30.0),
     "m1": (150.0, 40.0, 40.0, 24.0), "m2": (237.7, 78.4, 45.0, 32.0), "m3": (380.0, 110.0, 40.0, 36.0),
     "h1": (160.0, 150.0, 30.0, 24.0), "h2": (260.0, 220.0, 30.0, 30.0), "h3": (420.0, 330.0, 25.0, 36.0)}
+PATH_N, PATH_STEP = 81, 2.5      # 81 views on the same 200 deg arc (was 41 x 5 deg): twice as many frames for smoother swiping
 def path_pose(key, i):
-    r, h, tz, lens = PATHS[key]; az = math.radians(-100.0 + 5.0 * i)
+    r, h, tz, lens = PATHS[key]; az = math.radians(-100.0 + PATH_STEP * i)
     return Vector((CX + math.sin(az) * r, CY - math.cos(az) * r, h)), Vector((CX, CY, tz)), lens
 _VEG = None
 def clear_view(P, tz):
@@ -1619,7 +1621,7 @@ for ps in PASSES:
             log("masks need the sliced scene"); continue
         mask_setup(True); scene.render.resolution_x, scene.render.resolution_y = 1600, 900
         for key in PATHS:
-            for i in range(41):
+            for i in range(PATH_N):
                 P, T, lens = path_pose(key, i); look(cam, P, T); cam.data.lens = lens
                 render_to(os.path.join(OUT, "p", key, "mask", f"f_{i:03d}.png"))
         cam.data.lens = ORBIT["lens"]; mask_setup(False)
@@ -1670,7 +1672,7 @@ for ps in PASSES:
         hit, loc, *_ = scene.ray_cast(bpy.context.evaluated_depsgraph_get(), Vector((-174.0, -120.0, z10)), Vector((0, 1, 0)), distance=200)
         yb = loc.y if hit else -23.0
         log(f"flyin: facade hit={hit} y={yb:.2f}")
-        P0, TA = orbit_pose(20)
+        P0, TA = orbit_pose(ORBIT["count"] // 2)   # the front view (az 0), where the explorer starts
         P3 = Vector((-174.0, yb - 2.4, z10 - 0.1)); TB = Vector((-174.0, yb + 12.0, z10 - 0.6))
         P1 = P0 + Vector((-4.0, 48.0, -14.0)); P2 = P3 + Vector((10.0, -55.0, 9.0))
         N = FLY["frames"]
@@ -1801,6 +1803,97 @@ for ps in PASSES:
                 if md == "golden" and k not in ("client_front", "elev_persp", "m1_30", "arcade"): continue
                 clear_view(Vector(P_), T_[2]); look(cam, Vector(P_), Vector(T_)); cam.data.lens = lens; render_to(os.path.join(d, k + suf + ".jpg"))
         cam.data.lens = ORBIT["lens"]; set_mode("day")
+    elif ps == "splat_data":
+        # Gaussian-splat capture: ~370 calibrated views of the tower + site on full rings and close arcs, RGBA (sky and
+        # everything beyond SPLAT_R is transparent via a camera-only holdout cylinder), COLMAP + nerfstudio poses, and
+        # a coloured sparse point cloud ray-cast from the renders (synthetic "SfM").
+        import random as _rnd
+        R_HOLD = 165.0; test = os.environ.get("ST_SPLAT_TEST") == "1"
+        sd = os.path.join(RENDER_DIR, "out", "splat_test" if test else "splat"); idir = os.path.join(sd, "images"); os.makedirs(idir, exist_ok=True)
+        cycles_setup(int(os.environ.get("ST_SAMPLES") or 96)); set_mode("golden"); fill_light(True); clear_view(Vector((0, -9999, 999)), 0)
+        W_, H_ = (960, 540) if test else (1920, 1080)
+        scene.render.resolution_x, scene.render.resolution_y = W_, H_
+        scene.render.film_transparent = True
+        scene.render.image_settings.file_format = "PNG"; scene.render.image_settings.color_mode = "RGBA"; scene.render.image_settings.color_depth = "8"
+        hm = bpy.data.materials.new("SPL_Holdout"); hm.use_nodes = True; hn = hm.node_tree
+        for n in list(hn.nodes):
+            if n.type != "OUTPUT_MATERIAL": hn.nodes.remove(n)
+        ho = hn.nodes.new("ShaderNodeHoldout"); hn.links.new(ho.outputs[0], next(n for n in hn.nodes if n.type == "OUTPUT_MATERIAL").inputs["Surface"])
+        hc = _cyl("SPL_holdcyl", R_HOLD, R_HOLD, 1600.0, 128, hm, (CX, CY, -60.0), scene.collection, cap=False)
+        for a in ("visible_diffuse", "visible_glossy", "visible_transmission", "visible_shadow", "visible_volume_scatter"):
+            try: setattr(hc, a, False)
+            except Exception: pass
+        cams = []   # (name, P, T, lens)
+        def ring(tag, r, h, tz, n, lens, a0=-180.0, a1=180.0, full=True):
+            m = n if full else n - 1
+            for k in range(n):
+                az = math.radians(a0 + (a1 - a0) * k / m)
+                cams.append((f"{tag}{k:03d}", Vector((CX + math.sin(az) * r, CY - math.cos(az) * r, h)), Vector((CX, CY, tz)), lens))
+        ring("A", 95.0, 6.0, 25.0, 72, 24); ring("B", 130.0, 35.0, 35.0, 72, 28); ring("C", 120.0, 90.0, 40.0, 60, 28)
+        ring("D", 90.0, 150.0, 30.0, 48, 28); ring("E", 40.0, 230.0, 20.0, 24, 30)
+        ring("F", 45.0, 3.0, 8.0, 29, 22, -70.0, 70.0, False); ring("G", 70.0, 15.0, 18.0, 33, 24, -80.0, 80.0, False)
+        ring("H", 35.0, 100.0, 79.0, 36, 24)
+        if test: cams = cams[::62]
+        log(f"splat: {len(cams)} views at {W_}x{H_}")
+        frames = []
+        for (nm, P_, T_, lens) in cams:
+            look(cam, P_, T_); cam.data.lens = lens; cam.data.sensor_width = 36.0; cam.data.sensor_fit = "HORIZONTAL"
+            fp = os.path.join(idir, nm + ".png"); t0 = time.time()
+            if render_to(fp): log(f"splat {nm}: {time.time() - t0:.0f}s")
+            frames.append((nm, cam.matrix_world.copy(), lens))
+        # poses: nerfstudio transforms.json (OpenGL camera = Blender camera), and COLMAP text (OpenCV camera)
+        fx = W_ * frames[0][2] / 36.0
+        OFF = Vector((CX, CY, 0.0))       # scene centred on the tower for numerical comfort
+        tj = {"camera_model": "OPENCV", "w": W_, "h": H_, "cx": W_ / 2, "cy": H_ / 2, "ply_file_path": "sparse_pc.ply", "frames": []}
+        os.makedirs(os.path.join(sd, "sparse", "0"), exist_ok=True)
+        ctx_, itx = [], []
+        flip = Matrix(((1, 0, 0, 0), (0, -1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
+        for k, (nm, mw, lens) in enumerate(frames):
+            f_ = W_ * lens / 36.0; m = mw.copy(); m.translation = m.translation - OFF
+            tj["frames"].append({"file_path": f"images/{nm}.png", "fl_x": f_, "fl_y": f_, "transform_matrix": [list(r) for r in m]})
+            ctx_.append(f"{k + 1} PINHOLE {W_} {H_} {f_:.6f} {f_:.6f} {W_ / 2:.3f} {H_ / 2:.3f}")
+            w2c = (m @ flip).inverted(); q = w2c.to_quaternion(); t = w2c.translation
+            itx.append(f"{k + 1} {q.w:.9f} {q.x:.9f} {q.y:.9f} {q.z:.9f} {t.x:.6f} {t.y:.6f} {t.z:.6f} {k + 1} {nm}.png\n\n")
+        json.dump(tj, open(os.path.join(sd, "transforms.json"), "w"), indent=1)
+        open(os.path.join(sd, "sparse", "0", "cameras.txt"), "w").write("# Camera list\n" + "\n".join(ctx_) + "\n")
+        open(os.path.join(sd, "sparse", "0", "images.txt"), "w").write("# Image list\n" + "".join(itx))
+        # sparse points: cast a pixel grid from every 5th view, colour from that view's render
+        dg = bpy.context.evaluated_depsgraph_get(); pts = []; t_start = time.time(); rng = _rnd.Random(3)
+        for k, (nm, mw, lens) in enumerate(frames):
+            if k % (1 if test else 5): continue
+            if time.time() - t_start > 1500: break
+            im = bpy.data.images.load(os.path.join(idir, nm + ".png")); px = im.pixels[:]; f_ = W_ * lens / 36.0
+            org = mw.translation; R3 = mw.to_3x3()
+            for gy in range(27):
+                for gx in range(48):
+                    u = (gx + rng.random()) / 48 * W_; v = (gy + rng.random()) / 27 * H_
+                    d = R3 @ Vector(((u - W_ / 2) / f_, -(v - H_ / 2) / f_, -1.0)); d.normalize()
+                    h, loc, *_ = scene.ray_cast(dg, org, d, distance=600.0)
+                    if not h or (Vector((loc.x - CX, loc.y - CY)).length > R_HOLD - 2): continue
+                    pi = (int(H_ - 1 - v) * W_ + int(u)) * 4
+                    if px[pi + 3] < 0.5: continue
+                    pts.append((loc - OFF, [min(255, int(c * 255)) for c in px[pi:pi + 3]]))
+            bpy.data.images.remove(im)
+        with open(os.path.join(sd, "sparse", "0", "points3D.txt"), "w") as fo:
+            fo.write("# 3D point list\n")
+            for i, (p_, c_) in enumerate(pts): fo.write(f"{i + 1} {p_.x:.4f} {p_.y:.4f} {p_.z:.4f} {c_[0]} {c_[1]} {c_[2]} 0\n")
+        with open(os.path.join(sd, "sparse_pc.ply"), "w") as fo:
+            fo.write(f"ply\nformat ascii 1.0\nelement vertex {len(pts)}\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n")
+            for (p_, c_) in pts: fo.write(f"{p_.x:.4f} {p_.y:.4f} {p_.z:.4f} {c_[0]} {c_[1]} {c_[2]}\n")
+        log(f"splat: {len(frames)} poses, {len(pts)} sparse points ({time.time() - t_start:.0f}s)")
+        scene.render.film_transparent = False; scene.render.image_settings.file_format = "JPEG"; scene.render.image_settings.color_mode = "RGB"
+        bpy.data.objects.remove(hc)
+        # sky backdrop for the web viewer: the same golden-hour world, nothing else, as a 4096 x 2048 equirect
+        hid = [o for o in bpy.data.objects if o.type in ("MESH", "CURVE", "FONT", "EMPTY") and not o.hide_render]
+        for o in hid: o.hide_render = True
+        cd = bpy.data.cameras.new("SkyPano"); cd.type = "PANO"
+        try: cd.panorama_type = "EQUIRECTANGULAR"
+        except Exception: cd.cycles.panorama_type = "EQUIRECTANGULAR"
+        sc = bpy.data.objects.new("SkyPano", cd); scene.collection.objects.link(sc); sc.location = (CX, CY, 40.0); sc.rotation_euler = (math.radians(90), 0, 0)
+        scene.camera = sc; cycles_setup(32); scene.render.resolution_x, scene.render.resolution_y = (1024, 512) if test else (4096, 2048)
+        render_to(os.path.join(sd, "sky.jpg")); scene.camera = cam
+        for o in hid: o.hide_render = False
+        json.dump({"file": "skytree.spz", "offset": [CX, CY, 0.0], "views": len(frames), "sky_yaw_deg": 0.0}, open(os.path.join(sd, "meta.json"), "w"))
     elif ps == "garden_panos":
         # standing 360s in the podium terrace garden and the west-tower rooftop garden (day + night)
         cycles_setup(int(os.environ.get("ST_SAMPLES") or 256)); scene.frame_set(1); clear_view(Vector((0, -9999, 999)), 0)
@@ -1878,7 +1971,7 @@ for ps in PASSES:
         scene.render.resolution_x, scene.render.resolution_y = 2560, 1440
         order = [k.strip() for k in (os.environ.get("ST_PATHS") or "m2,g2,h2,m1,m3,g1,g3,h1,h3").split(",")]
         for key in order:
-            for i in range(41):
+            for i in range(PATH_N):
                 P, T, lens = path_pose(key, i); clear_view(P, T.z); look(cam, P, T); cam.data.lens = lens
                 p = os.path.join(OUT, "p", key, "day", f"f_{i:03d}.jpg"); t = time.time()
                 if render_to(p): log(f"path {key} {i:03d}: {time.time() - t:.0f}s")

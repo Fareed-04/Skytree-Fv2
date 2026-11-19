@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<base href="/skytree/">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#14110c">
+<title>Sky Tree Tower · Free-roam 3D</title>
+<link rel="modulepreload" href="splat.bundle.js">
+<style>
+:root{--gold:#d8b46a;--gold2:#e6c27a;--cream:#f3ead8;--ink:#14110c;--mute:#a59a86}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--ink);color:var(--cream);font:14px/1.4 "Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#stage{position:fixed;inset:0;touch-action:none}
+#stage canvas{display:block;width:100%;height:100%}
+#brand{position:fixed;top:calc(14px + env(safe-area-inset-top));left:18px;font:500 22px/1 "Cormorant Garamond",Georgia,serif;letter-spacing:.32em;color:var(--gold2);text-shadow:0 1px 8px rgba(0,0,0,.45);pointer-events:none}
+#brand small{display:block;font:500 10px/1 Inter,system-ui,sans-serif;letter-spacing:.3em;color:var(--cream);opacity:.8;margin-top:8px}
+#back{position:fixed;top:calc(14px + env(safe-area-inset-top));right:16px;padding:10px 16px;border-radius:999px;background:rgba(20,17,12,.62);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:var(--cream);text-decoration:none;border:1px solid rgba(216,180,106,.35);font-size:13px}
+#views{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:6px;padding:6px;border-radius:999px;background:rgba(20,17,12,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(216,180,106,.25);max-width:calc(100vw - 20px);overflow-x:auto;scrollbar-width:none}
+#views::-webkit-scrollbar{display:none}
+#views button{flex:none;border:0;background:transparent;color:var(--cream);padding:9px 14px;border-radius:999px;font:500 13px/1 Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+#views button.on{background:var(--gold);color:#1a1408}
+#hint{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);font-size:12px;color:var(--mute);letter-spacing:.06em;transition:opacity .8s;pointer-events:none;text-align:center;white-space:nowrap}
+#loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--ink);transition:opacity .7s;z-index:9}
+#loader b{font:500 28px/1 "Cormorant Garamond",Georgia,serif;letter-spacing:.4em;color:var(--gold2)}
+#loader .bar{width:180px;height:2px;background:rgba(243,234,216,.15);overflow:hidden;border-radius:2px}
+#loader i{display:block;height:100%;width:4%;background:var(--gold);transition:width .3s}
+#loader small{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--mute)}
+#nogl{display:none;position:fixed;inset:0;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="brand">SKY TREE<small>FREE-ROAM 3D</small></div>
+<a id="back" href="/skytree/">‹ Explorer</a>
+<div id="hint">Drag to orbit · pinch or scroll to zoom · two fingers to pan</div>
+<div id="views"></div>
+<div id="loader"><b>SKY TREE</b><div class="bar"><i id="lbar"></i></div><small>Loading the 3D model</small></div>
+<div id="nogl"><p>This 3D view needs WebGL 2. Open the <a href="/skytree/" style="color:var(--gold)">Explorer</a> instead.</p></div>
+<script>
+if (!document.createElement("canvas").getContext("webgl2")) { document.getElementById("nogl").style.display = "flex"; document.getElementById("loader").remove(); }
+setTimeout(() => { const h = document.getElementById("hint"); if (h) h.style.opacity = 0; }, 7000);
+</script>
+<script type="module" src="splat.bundle.js"></script>
+</body>
+</html>
