@@ -25,14 +25,14 @@ new THREE.TextureLoader().load(BASE + "sky.jpg", t => { t.mapping = THREE.Equire
 // three.js is Y up: rotate -90 deg about X.  B(x,y,z) -> T(x, z, -y)
 const B = (x, y, z) => new THREE.Vector3(x, z, -y);
 const meta = await fetch(BASE + "meta.json").then(r => r.ok ? r.json() : {}).catch(() => ({}));
-const splat = new SplatMesh({ url: BASE + (meta.file || "skytree.spz"), lod: true,
+const splat = new SplatMesh({ url: BASE + ((MOBILE && meta.file_mobile) || meta.file || "skytree.spz"), lod: true,
   onProgress: e => { if (e.lengthComputable) $("lbar").style.width = (100 * e.loaded / e.total).toFixed(0) + "%"; } });
 splat.rotation.x = -Math.PI / 2;
 scene.add(splat);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = 0.08; controls.rotateSpeed = MOBILE ? 0.55 : 0.45;
-controls.minDistance = 25; controls.maxDistance = 420; controls.maxPolarAngle = Math.PI * 0.495; controls.screenSpacePanning = true;
+controls.minDistance = 15; controls.maxDistance = 420; controls.maxPolarAngle = Math.PI * 0.495; controls.screenSpacePanning = true;
 controls.panSpeed = 0.6; controls.zoomSpeed = 0.9;
 const TARGET0 = B(0, 0, 32);
 

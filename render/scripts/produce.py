@@ -1534,6 +1534,37 @@ def podium_facade_v2():
     for o in cut.objects: o.hide_render = True
     log(f"podium facade v2: {len(col.objects)} pieces")
 podium_facade_v2()
+
+# ---------------------------------------------------------------- v5: no trees around the building (street trees on Pine Avenue stay)
+def hide_trees_around():
+    from collections import Counter
+    keep_cols = {"landscape_v4", "LS_lib", "interior_v1", "facade_v2", "facade_v2_cut", "traffic", "people", "street_lights", "night_floods"}
+    n = 0; kept = 0; by = Counter()
+    for o in bpy.data.objects:
+        if o.type != "EMPTY" or o.instance_type != "COLLECTION" or not o.instance_collection: continue
+        cols = {c.name for c in o.users_collection}
+        if cols & keep_cols or any(c.startswith(("LS_", "BK_", "PH_")) for c in cols): continue
+        nm = o.instance_collection.name
+        if _re.search(r"palm|shrub|bush|grass|flower|hedge|abelia|geranium|rose|hydrangea|cypress|lamp|light|bench|car|bus|truck|people|person|sign", nm, _re.I): continue
+        p = o.matrix_world.translation
+        road_side = p.y < -52.5                       # Pine Avenue verges and everything across the road
+        if not road_side and math.hypot(p.x - CX, p.y - CY) < 300.0:
+            if not o.hide_render: n += 1; by[next(iter(cols)) + ":" + nm[:18]] += 1
+            o.hide_render = True
+        elif not o.hide_render: kept += 1
+    # standalone tree meshes (not instances) next to the plot
+    bset = set(o.name for o in building_objects()); mt = []
+    for o in bpy.data.objects:
+        if o.type != "MESH" or o.hide_render or o.name in bset: continue
+        cols = {c.name for c in o.users_collection}
+        if cols & keep_cols or any(c.startswith(("LS_", "BK_", "PH_", "IN_", "FV_")) for c in cols): continue
+        mats = " ".join(m.name for m in o.data.materials if m)
+        if not _re.search(r"leaf|leav|foliage|bark|tree|trunk|branch|twig|maple|oak|eucalyp", o.name + " " + mats, _re.I): continue
+        p = o.matrix_world @ Vector(o.bound_box[0]); q = o.matrix_world @ Vector(o.bound_box[6]); c_ = (p + q) / 2
+        if c_.y >= -52.5 and math.hypot(c_.x - CX, c_.y - CY) < 300.0:
+            o.hide_render = True; mt.append(o.name)
+    log(f"trees: hid {n} around the building, kept {kept} (road and beyond)  {dict(by.most_common(12))}; meshes {len(mt)}: {mt[:12]}")
+hide_trees_around()
 _set_mode_v1 = set_mode
 def set_mode(mode):
     _set_mode_v1(mode); nv = float(scene.get("night", 0.0))
@@ -1833,6 +1864,14 @@ for ps in PASSES:
         ring("D", 90.0, 150.0, 30.0, 48, 28); ring("E", 40.0, 230.0, 20.0, 24, 30)
         ring("F", 45.0, 3.0, 8.0, 29, 22, -70.0, 70.0, False); ring("G", 70.0, 15.0, 18.0, 33, 24, -80.0, 80.0, False)
         ring("H", 35.0, 100.0, 79.0, 36, 24)
+        if os.environ.get("ST_SPLAT_V2", "1") == "1":
+            # v2: closer views for facade/podium/tower detail (sharper splat). Existing A-H images are kept.
+            ring("I", 55.0, 12.0, 18.0, 72, 24)                      # podium + arcade, close all round
+            ring("J", 60.0, 40.0, 42.0, 72, 24)                      # lower tower
+            ring("K", 60.0, 70.0, 66.0, 60, 24)                      # upper tower
+            ring("L", 65.0, 105.0, 82.0, 48, 24)                     # crown / roof
+            ring("M", 32.0, 4.0, 7.0, 41, 20, -75.0, 75.0, False)    # forecourt + entrance, very close
+            ring("N", 85.0, 55.0, 45.0, 48, 35)                      # mild telephoto detail all round
         if test: cams = cams[::62]
         log(f"splat: {len(cams)} views at {W_}x{H_}")
         frames = []
