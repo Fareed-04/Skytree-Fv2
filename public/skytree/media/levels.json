@@ -112,8 +112,8 @@
   "target_z": 45.0,
   "lens": 32.0,
   "az0": -100.0,
-  "step": 5.0,
-  "count": 41
+  "step": 2.5,
+  "count": 81
  },
  "explode": {
   "az": 32.0,

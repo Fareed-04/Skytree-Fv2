@@ -267,6 +267,7 @@ body.present #pinPine,body.sheet-open #pinPine{display:none!important}
   <button id="viewBtn" title="Street level view">⌂<span class="lab">Street level</span></button>
   <button id="explodeBtn" title="Explode floors">⇕<span class="lab">Explode floors</span></button>
   <button id="presBtn" title="Presentation mode">▷<span class="lab">Present</span></button>
+  <button id="splatBtn" title="Free-roam 3D (Gaussian splat)" onclick="location.href='/skytree/splat.html'">◈<span class="lab">Free roam 3D</span></button>
   <span class="sep"></span>
   <button id="tourBtn" title="Virtual tour">◎<span class="lab">Enter Residence 10-A</span></button>
 </div>
@@ -344,16 +345,14 @@ function geom(im){ // full-bleed object-fit: cover on every screen; on tall phon
   const w = iw*s, h = ih*s; const x = (W-w)/2, y = (H-h)/2 + (W/H < 0.8 ? h*0.015 : 0); return {x,y,w,h,s};
 }
 let rq = 0; const reqDraw = () => { if (!rq) rq = requestAnimationFrame(() => { rq = 0; draw(); }); };
-function drawBlend(){   // between two rendered views: cross-dissolve the neighbours so a swipe glides instead of stepping
-  const N = ORBIT_N, f = Math.max(0, Math.min(N - 1, S.fpos)), a = Math.floor(f), b = Math.min(N - 1, a + 1), t = f - a;
-  const oa = img(src(S.mode, a)), ob = img(src(S.mode, b));
-  if (!oa.ok) oa.p.then(reqDraw); if (!ob.ok) ob.p.then(reqDraw);
-  let base = oa.ok ? oa.im : ob.ok ? ob.im : null;
-  for (let d = 1; !base && d < N; d++) for (const j of [a - d, b + d]) { if (j >= 0 && j < N){ const o = img(src(S.mode, j)); if (o.ok){ base = o.im; break; } } }
+function drawBlend(){   // while swiping: always show one sharp rendered view (nearest frame), no cross-dissolve / ghosting
+  const N = ORBIT_N, f = Math.max(0, Math.min(N - 1, S.fpos)), a = Math.round(f);
+  const oa = img(src(S.mode, a));
+  if (!oa.ok) oa.p.then(reqDraw);
+  let base = oa.ok ? oa.im : null;
+  for (let d = 1; !base && d < N; d++) for (const j of [a - d, a + d]) { if (j >= 0 && j < N){ const o = img(src(S.mode, j)); if (o.ok){ base = o.im; break; } } }
   if (!base) return false;
   const g = geom(base); cx.drawImage(base, g.x, g.y, g.w, g.h);
-  if (oa.ok && ob.ok && t > 0.02 && t < 0.98){ cx.save(); cx.globalAlpha = t; cx.drawImage(ob.im, g.x, g.y, g.w, g.h); cx.restore(); }
-  else if (oa.ok && ob.ok && t >= 0.98) cx.drawImage(ob.im, g.x, g.y, g.w, g.h);
   lastGood = base; pin.style.display = "none"; return true;
 }
 function draw(){
