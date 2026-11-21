@@ -1872,6 +1872,13 @@ for ps in PASSES:
             ring("L", 65.0, 105.0, 82.0, 48, 24)                     # crown / roof
             ring("M", 32.0, 4.0, 7.0, 41, 20, -75.0, 75.0, False)    # forecourt + entrance, very close
             ring("N", 85.0, 55.0, 45.0, 48, 35)                      # mild telephoto detail all round
+            # v2b: even closer facade / rooftop / terrace / ground coverage (sharp on phones too)
+            ring("O", 42.0, 20.0, 22.0, 96, 24)                      # podium facade, very close all round
+            ring("P", 42.0, 55.0, 55.0, 72, 24)                      # tower facade, very close all round
+            ring("Q", 26.0, 100.0, 86.0, 36, 20)                     # rooftop, looking down from just above
+            ring("R", 30.0, 36.0, 25.0, 60, 20)                      # podium terrace garden
+            ring("S", 70.0, 2.5, 4.0, 72, 22)                        # ground level, eye height all round
+            ring("T", 50.0, 26.0, 0.0, 48, 22)                       # forecourt / site ground from above
         if test: cams = cams[::62]
         log(f"splat: {len(cams)} views at {W_}x{H_}")
         frames = []

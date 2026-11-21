@@ -21,6 +21,7 @@ html,body{height:100%;background:var(--ink);color:var(--cream);font:14px/1.4 "In
 #views button{flex:none;border:0;background:transparent;color:var(--cream);padding:9px 14px;border-radius:999px;font:500 13px/1 Inter,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
 #views button.on{background:var(--gold);color:#1a1408}
 #hint{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);font-size:12px;color:var(--mute);letter-spacing:.06em;transition:opacity .8s;pointer-events:none;text-align:center;white-space:nowrap}
+#sharp{position:fixed;top:calc(14px + env(safe-area-inset-top));left:16px;display:none;align-items:center;gap:10px;padding:9px 14px;border-radius:999px;background:rgba(20,17,12,.62);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(216,180,106,.35);font-size:12px;color:var(--cream);transition:opacity .6s;z-index:5}#sharp .sb{width:70px;height:2px;background:rgba(243,234,216,.2);border-radius:2px;overflow:hidden}#sharp i{display:block;height:100%;width:0;background:var(--gold);transition:width .3s}
 #loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--ink);transition:opacity .7s;z-index:9}
 #loader b{font:500 28px/1 "Cormorant Garamond",Georgia,serif;letter-spacing:.4em;color:var(--gold2)}
 #loader .bar{width:180px;height:2px;background:rgba(243,234,216,.15);overflow:hidden;border-radius:2px}
@@ -35,6 +36,7 @@ html,body{height:100%;background:var(--ink);color:var(--cream);font:14px/1.4 "In
 <a id="back" href="/skytree/">‹ Explorer</a>
 <div id="hint">Drag to orbit · pinch or scroll to zoom · two fingers to pan</div>
 <div id="views"></div>
+<div id="sharp"><span>Sharpening</span><div class="sb"><i id="sbar"></i></div></div>
 <div id="loader"><b>SKY TREE</b><div class="bar"><i id="lbar"></i></div><small>Loading the 3D model</small></div>
 <div id="nogl"><p>This 3D view needs WebGL 2. Open the <a href="/skytree/" style="color:var(--gold)">Explorer</a> instead.</p></div>
 <script>
