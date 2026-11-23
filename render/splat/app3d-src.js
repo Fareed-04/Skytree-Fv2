@@ -179,13 +179,13 @@ function focusFloor(i){
   const [zb, zt] = Z[i], zm = (zb + Math.min(zt, 72)) / 2 + (S.exploded ? offsetOf(i) : 0);
   const tgt = B(0, 0, zm), dir = camera.position.clone().sub(controls.target); dir.y = 0;
   if (dir.lengthSq() < 1) dir.set(0, 0, 1); dir.normalize();
-  const portrait = innerHeight > innerWidth, dist = portrait ? 210 : 150;
+  const portrait = innerHeight > innerWidth, dist = (portrait ? 250 : 150) * (S.exploded ? 1.3 : 1);
   const pos = tgt.clone().add(dir.clone().multiplyScalar(dist)); pos.y = zm + (portrait ? 40 : 28);
   // keep the building clear of the details panel (desktop: panel on the right; phones: bottom sheet)
   const px2m = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * dist / innerHeight;
   const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), dir).normalize();
   if (innerWidth > 760){ const sh = Math.min(420, innerWidth) / 2 * px2m; tgt.add(right.clone().multiplyScalar(sh)); pos.add(right.clone().multiplyScalar(sh)); }
-  else { const dv = innerHeight * 0.34 * px2m; tgt.y -= dv; pos.y -= dv; }
+  else { const dv = innerHeight * 0.30 * px2m; tgt.y -= dv; pos.y -= dv; }
   return flyTo(pos, tgt, 1500, false);
 }
 
@@ -211,13 +211,14 @@ async function toggleExplode(){
     if (!pieces){ expLabel("Loading 0%"); await loadPieces(p => expLabel(`Loading ${Math.round(p * 100)}%`)); }
     pieces.forEach(m => m.visible = true); mainSplat.visible = false;
     document.body.classList.add("exploded"); bExp.classList.add("on"); expLabel("Close explode");
-    flyTo(MOBILE && innerHeight > innerWidth ? [-300, -380, 150] : [-250, -300, 140], [0, 0, 96], 2600);
+    if (S.sel < 0) flyTo(MOBILE && innerHeight > innerWidth ? [-300, -380, 150] : [-250, -300, 140], [0, 0, 96], 2600);
   } else { bExp.classList.remove("on"); expLabel("Explode floors"); document.body.classList.remove("exploded"); }
   const t0 = performance.now(), dur = 1900;
   await new Promise(done => { const step = now => { const t = Math.min(1, (now - t0) / dur), e = ease(opening ? t : 1 - t);
       lvG.forEach((g, i) => g.position.z = offsetOf(i) * e); world.updateMatrixWorld(true); pieces.forEach(m => { try { m.updateVersion(); } catch(err){} }); if (t < 1) requestAnimationFrame(step); else done(); }; requestAnimationFrame(step); });
   if (!opening){ mainSplat.visible = true; pieces.forEach(m => m.visible = false); lvG.forEach(g => g.position.z = 0); goView("aerial"); }
   S.exploded = opening; S.anim = false; paint();
+  if (opening && S.sel >= 0) focusFloor(S.sel);
 }
 bExp.onclick = toggleExplode;
 
@@ -244,6 +245,31 @@ function pinSync(){
     P.el.style.display = "block"; P.el.style.left = x + "px"; P.el.style.top = (y - 12) + "px";
   }
 }
+
+/* floor labels beside each floor while exploded */
+const lblBox = document.createElement("div"); document.body.appendChild(lblBox);
+const fl = LEVELS.map((L, i) => { const el = document.createElement("button"); el.className = "flbl"; el.textContent = L.n;
+  el.title = i === 0 ? "Ground" : L.n === "PH" ? "Penthouse" : "Floor " + L.n;
+  el.onclick = () => select(i, true); el.onmouseenter = () => { S.hover = i; paint(); railMark(); }; el.onmouseleave = () => { S.hover = -1; paint(); railMark(); };
+  lblBox.appendChild(el); return el; });
+function labelSync(){
+  const show = S.exploded || S.anim;
+  // put the labels on whichever side of the tower faces the camera's right
+  const camB = new THREE.Vector3().copy(camera.position).applyMatrix4(new THREE.Matrix4().copy(world.matrixWorld).invert());
+  const ang = Math.atan2(camB.y, camB.x), sx = Math.cos(ang + Math.PI / 2) * -30, sy = Math.sin(ang + Math.PI / 2) * -30;
+  fl.forEach((el, i) => {
+    const op = show ? Math.min(1, lvG[i].position.z / Math.max(1, offsetOf(i)) * 1.5 || (i === 0 ? (S.exploded ? 1 : 0) : 0)) : 0;
+    if (op <= 0.02){ el.style.display = "none"; return; }
+    const [zb, zt] = Z[i]; tmpV.set(sx, sy, (zb + Math.min(zt, 70)) / 2 + lvG[i].position.z).applyMatrix4(world.matrixWorld).project(camera);
+    if (tmpV.z > 1){ el.style.display = "none"; return; }
+    el.style.display = "block"; el.style.opacity = op; el.classList.toggle("on", i === S.sel || i === S.hover);
+    el.style.left = ((tmpV.x * .5 + .5) * innerWidth) + "px"; el.style.top = ((-tmpV.y * .5 + .5) * innerHeight) + "px";
+  });
+}
+const flCss = document.createElement("style");
+flCss.textContent = `.flbl{position:fixed;z-index:12;transform:translate(-50%,-50%);min-width:30px;padding:5px 8px;border-radius:999px;background:rgba(13,12,10,.66);border:1px solid rgba(230,194,122,.55);color:#f4ecdc;font:600 11px/1 Manrope,system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .15s,color .15s}
+.flbl:hover,.flbl.on{background:#e6c27a;color:#1a1408}`;
+document.head.appendChild(flCss);
 
 /* ================================================================== interaction */
 const tip = $("tip"), hint = $("hint");
@@ -532,7 +558,7 @@ renderer.setAnimationLoop(now => {
     controls.target.y = Math.max(0, Math.min(S.exploded ? 200 : 110, controls.target.y));
   }
   world.updateMatrixWorld(); camera.updateMatrixWorld();
-  try { pinSync(); } catch(e){}
+  try { pinSync(); labelSync(); } catch(e){}
   renderer.render(scene, camera);
 });
 
