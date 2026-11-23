@@ -1884,6 +1884,7 @@ for ps in PASSES:
         frames = []
         for (nm, P_, T_, lens) in cams:
             look(cam, P_, T_); cam.data.lens = lens; cam.data.sensor_width = 36.0; cam.data.sensor_fit = "HORIZONTAL"
+            bpy.context.view_layer.update()   # refresh matrix_world even when the render is skipped (image already exists)
             fp = os.path.join(idir, nm + ".png"); t0 = time.time()
             if render_to(fp): log(f"splat {nm}: {time.time() - t0:.0f}s")
             frames.append((nm, cam.matrix_world.copy(), lens))

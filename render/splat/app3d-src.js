@@ -52,13 +52,13 @@ new THREE.TextureLoader().load(BASE + "sky.jpg", t => { t.mapping = THREE.Equire
 const world = new THREE.Group(); world.rotation.x = -Math.PI / 2; scene.add(world);
 const B = (x, y, z) => new THREE.Vector3(x, z, -y);            // Blender -> three (for camera poses)
 
-const meta = await fetch(BASE + "meta.json").then(r => r.ok ? r.json() : {}).catch(() => ({}));
+const meta = await fetch(BASE + "meta.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : {}).catch(() => ({}));
 
 /* ================================================================== splat: preview first, then the sharp one */
 const mainFile = (MOBILE && meta.file_mobile) || meta.file || "skytree.spz";
 const prevFile = meta.file_preview && meta.file_preview !== mainFile ? meta.file_preview : null;
 const pct = e => e.lengthComputable ? (100 * e.loaded / e.total) : 0;
-function addSplat(file, onProgress, parent = world, lod = true){ const m = new SplatMesh({ url: BASE + file, lod, onProgress }); parent.add(m); return m; }
+function addSplat(file, onProgress, parent = world, lod = true){ const m = new SplatMesh({ url: BASE + file + (meta.rev ? "?r=" + meta.rev : ""), lod, onProgress }); parent.add(m); return m; }
 let mainSplat;
 const firstReady = new Promise(res => {
   if (prevFile){
@@ -105,6 +105,18 @@ function mapLayer(z, halfM, y, order){
   }
 }
 setTimeout(() => { mapLayer(12, MOBILE ? 12000 : 20000, -0.9, 3); mapLayer(15, MOBILE ? 1500 : 2400, -0.7, 2); mapLayer(18, MOBILE ? 260 : 380, -0.5, 1); }, 500);
+// soft lawn-toned apron: the rendered site (trees, lawns, roads) blends into the real satellite photo instead of
+// meeting it at a hard, mismatched edge; also fills any thin spots in the splat's own ground with a matching tone
+if (qs.get("noblend") !== "1"){
+  const R0 = 118, R1 = 250, S = 512, cv = document.createElement("canvas"); cv.width = cv.height = S; const g = cv.getContext("2d");
+  const gr = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  gr.addColorStop(0, "rgba(98,100,77,1)"); gr.addColorStop(R0 / R1, "rgba(98,100,77,0.97)");
+  gr.addColorStop((R0 + R1) / 2 / R1, "rgba(104,106,84,0.55)"); gr.addColorStop(1, "rgba(110,110,92,0)");
+  g.fillStyle = gr; g.fillRect(0, 0, S, S);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const apron = new THREE.Mesh(new THREE.CircleGeometry(R1, 96), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: true }));
+  apron.rotation.x = -Math.PI / 2; apron.position.y = -0.3; apron.renderOrder = -5; scene.add(apron);
+}
 
 /* ================================================================== floors: 3D overlays + pick volumes */
 const GAP = 6.5;                                                      // explode spacing (m)
