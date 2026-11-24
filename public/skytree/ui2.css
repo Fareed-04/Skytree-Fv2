@@ -1,0 +1,68 @@
+/* Sky Tree · UI v2 — quiet by default, everything else one tap away */
+:root{--glass:rgba(14,13,11,.62);--glass2:rgba(20,18,15,.86);--hair:rgba(244,236,220,.12)}
+/* retire the old always-on controls (they stay in the DOM: the new UI drives them) */
+#tabs,#availBtn,#listBtn,#shareBtn,#rail,#pad,#dock,#views{display:none!important}
+header{padding:calc(16px + env(safe-area-inset-top)) 22px 14px}
+.brand b{font-size:22px;letter-spacing:.2em}.brand span{font-size:9.5px;letter-spacing:.34em;margin-top:5px}
+.hbtns{display:flex;gap:10px;align-items:center}
+.cta{padding:10px 20px;font-size:12.5px;letter-spacing:.08em;box-shadow:0 6px 24px rgba(217,180,106,.25)}
+#u2menuBtn{width:42px;height:42px;border-radius:50%;background:var(--glass);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--hair);display:grid;place-items:center;color:var(--cream);cursor:pointer;position:relative}
+#u2menuBtn i,#u2menuBtn i:before,#u2menuBtn i:after{display:block;width:16px;height:1.5px;background:currentColor;border-radius:2px;position:relative;transition:transform .25s,opacity .2s}
+#u2menuBtn i:before,#u2menuBtn i:after{content:"";position:absolute;left:0}#u2menuBtn i:before{top:-5px}#u2menuBtn i:after{top:5px}
+#u2menuBtn.on i{background:transparent}#u2menuBtn.on i:before{transform:translateY(5px) rotate(45deg)}#u2menuBtn.on i:after{transform:translateY(-5px) rotate(-45deg)}
+#u2menuBtn .dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--gold);display:none}#u2menuBtn .dot.on{display:block}
+/* the dock: four things, nothing more */
+#u2dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));z-index:22;display:flex;gap:4px;padding:5px;background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--hair);border-radius:999px;box-shadow:0 10px 40px rgba(0,0,0,.35);transition:opacity .4s}
+#u2dock>button{display:flex;align-items:center;gap:8px;padding:11px 18px;border-radius:999px;font-size:13px;letter-spacing:.03em;color:var(--cream);white-space:nowrap;cursor:pointer;transition:background .2s,color .2s}
+#u2dock>button:hover{background:rgba(244,236,220,.07)}
+#u2dock>button.on{background:rgba(217,180,106,.16);color:var(--gold2)}
+#u2dock>button svg{width:17px;height:17px;flex:none;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#u2dock>button .car{width:9px;height:9px;opacity:.6;transition:transform .25s}#u2dock>button.on .car{transform:rotate(180deg)}
+#u2dock>button.ultra{background:linear-gradient(135deg,#e8c98a,#b8894a);color:#1a1408;font-weight:600;margin-left:4px;box-shadow:0 4px 18px rgba(217,180,106,.3)}
+#u2dock .sh{display:none}
+#u2dock>button.ultra:hover{filter:brightness(1.07)}
+body.present #u2dock,body.present #u2menuBtn{opacity:0;pointer-events:none}
+/* popovers */
+.u2pop{position:fixed;z-index:40;background:var(--glass2);backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2);border:1px solid var(--hair);border-radius:20px;padding:14px;box-shadow:0 24px 60px rgba(0,0,0,.45);opacity:0;transform:translateY(8px) scale(.98);pointer-events:none;transition:opacity .22s,transform .22s cubic-bezier(.2,.8,.2,1);color:var(--cream)}
+.u2pop.on{opacity:1;transform:none;pointer-events:auto}
+.u2pop h6{margin:2px 4px 8px;font:600 9.5px/1 Manrope,system-ui,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:var(--mute)}
+.u2pop h6+.seg,.u2pop h6+.chips{margin-bottom:12px}
+.u2pop .seg{display:flex;gap:3px;background:rgba(244,236,220,.05);border-radius:12px;padding:3px}
+.u2pop .seg button{flex:1;padding:9px 6px;border-radius:9px;font-size:12.5px;color:var(--mute);cursor:pointer;transition:background .2s,color .2s}
+.u2pop .seg button:hover{color:var(--cream)}.u2pop .seg button.on{background:var(--gold);color:#1a1408;font-weight:600}
+.u2pop .seg button:disabled{opacity:.3;cursor:default}
+.u2pop .row{display:flex;align-items:center;gap:12px;width:100%;padding:11px 10px;border-radius:12px;font-size:13.5px;color:var(--cream);cursor:pointer;text-align:left}
+.u2pop .row:hover{background:rgba(244,236,220,.06)}
+.u2pop .row svg{width:17px;height:17px;stroke:var(--gold2);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.u2pop .row em{margin-left:auto;font-style:normal;font-size:11.5px;color:var(--mute)}
+.u2pop .row .sw{margin-left:auto;width:32px;height:18px;border-radius:999px;background:rgba(244,236,220,.15);position:relative;transition:background .2s}
+.u2pop .row .sw:after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--cream);transition:transform .2s}
+.u2pop .row.on .sw{background:var(--gold)}.u2pop .row.on .sw:after{transform:translateX(14px);background:#1a1408}
+.u2pop hr{border:0;border-top:1px solid var(--hair);margin:8px 4px}
+.u2pop .chips{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.u2pop .chips button{padding:9px 0;border-radius:9px;font-size:12.5px;color:var(--cream);background:rgba(244,236,220,.05);cursor:pointer;font-variant-numeric:tabular-nums;transition:background .15s,color .15s}
+.u2pop .chips button:hover,.u2pop .chips button.on{background:var(--gold);color:#1a1408;font-weight:600}
+.u2pop .flr{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:11px;font-size:13px;cursor:pointer;text-align:left;color:var(--cream)}
+.u2pop .flr:hover,.u2pop .flr.on{background:rgba(217,180,106,.14)}
+.u2pop .flr b{width:30px;font-weight:600;color:var(--gold2);font-variant-numeric:tabular-nums}
+.u2pop .flr span{color:var(--mute);font-size:12px}
+#u2menu{top:calc(68px + env(safe-area-inset-top));right:18px;width:250px;padding:8px}
+#u2views,#u2floors{width:340px}
+.hint{bottom:calc(86px + env(safe-area-inset-bottom));font-size:11px;letter-spacing:.18em}
+#avLegend{bottom:calc(86px + env(safe-area-inset-bottom))!important}
+#pinPine{bottom:calc(92px + env(safe-area-inset-bottom))!important}
+/* phones: a single clean row, labels under icons, popovers become sheets above the dock */
+@media (max-width:760px){
+  header{padding:calc(12px + env(safe-area-inset-top)) 14px 10px}
+  .brand b{font-size:17px;letter-spacing:.16em;white-space:nowrap}.brand span{display:none}
+  .cta{padding:9px 15px;font-size:12px}#u2menuBtn{width:38px;height:38px}
+  #u2dock{left:10px;right:10px;transform:none;justify-content:space-between;border-radius:22px;padding:5px;bottom:calc(10px + env(safe-area-inset-bottom))}
+  #u2dock>button{flex:1;flex-direction:column;gap:4px;padding:8px 2px;border-radius:17px;font-size:10.5px;letter-spacing:.02em}
+  #u2dock>button .car{display:none}
+  #u2dock>button.ultra{margin-left:0}
+  #u2dock .lg{display:none}#u2dock .sh{display:inline}
+  .u2pop{left:10px!important;right:10px!important;width:auto!important;bottom:calc(84px + env(safe-area-inset-bottom))!important;top:auto!important;max-height:62vh;overflow:auto}
+  #u2menu{top:calc(60px + env(safe-area-inset-top))!important;bottom:auto!important;left:auto!important;width:240px!important}
+  .hint{display:none}
+  #pinPine{bottom:calc(88px + env(safe-area-inset-bottom))!important}
+}

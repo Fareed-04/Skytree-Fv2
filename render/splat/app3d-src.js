@@ -1,4 +1,4 @@
-// Sky Tree Tower · Live 3D explorer (Gaussian splat).
+// Sky Tree Tower · Ultra Experience explorer (Gaussian splat).
 // Everything from the rendered explorer (floors, details, residences, shortlist, enquiry, 360 interiors,
 // presentation, gallery, map) running on top of a real-time splat: hover any floor from any angle, click for
 // details, explode the floors and orbit freely around them, fly inside Residence 10-A.
@@ -44,7 +44,8 @@ renderer.setSize(innerWidth, innerHeight);
 stage.insertBefore(renderer.domElement, stage.firstChild);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.5, 30000);
-const spark = new SparkRenderer({ renderer, enableLod: true, lodSplatCount: MOBILE ? 1_300_000 : 3_000_000 });
+const qs = new URLSearchParams(location.search); const STILL = qs.get("still") === "1";
+const spark = new SparkRenderer({ renderer, enableLod: true, lodSplatCount: Number(qs.get("lod")) || (MOBILE ? 1_300_000 : 3_600_000) });
 scene.add(spark);
 new THREE.TextureLoader().load(BASE + "sky.jpg", t => { t.mapping = THREE.EquirectangularReflectionMapping; t.colorSpace = THREE.SRGBColorSpace; scene.background = t; },
   undefined, () => { scene.background = new THREE.Color(0xb9c4cc); });
@@ -55,8 +56,8 @@ const B = (x, y, z) => new THREE.Vector3(x, z, -y);            // Blender -> thr
 const meta = await fetch(BASE + "meta.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : {}).catch(() => ({}));
 
 /* ================================================================== splat: preview first, then the sharp one */
-const mainFile = (MOBILE && meta.file_mobile) || meta.file || "skytree.spz";
-const prevFile = meta.file_preview && meta.file_preview !== mainFile ? meta.file_preview : null;
+const mainFile = qs.get("splat") || (MOBILE && meta.file_mobile) || meta.file || "skytree.spz";
+const prevFile = !qs.get("splat") && meta.file_preview && meta.file_preview !== mainFile ? meta.file_preview : null;
 const pct = e => e.lengthComputable ? (100 * e.loaded / e.total) : 0;
 function addSplat(file, onProgress, parent = world, lod = true){ const m = new SplatMesh({ url: BASE + file + (meta.rev ? "?r=" + meta.rev : ""), lod, onProgress }); parent.add(m); return m; }
 let mainSplat;
@@ -83,7 +84,6 @@ const firstReady = new Promise(res => {
 
 /* ================================================================== satellite ground (Esri World Imagery) */
 const SITE = { lat: meta.site_lat ?? 31.3793117, lon: meta.site_lon ?? 74.2543937 };
-const qs = new URLSearchParams(location.search);
 const MAP_DEG = Number(qs.get("mapdeg") ?? meta.map_bearing_deg ?? 0);
 const mapGroup = new THREE.Group(); mapGroup.rotation.y = THREE.MathUtils.degToRad(MAP_DEG);
 mapGroup.position.set(Number(qs.get("mapdx") ?? meta.map_dx ?? 0), 0, -Number(qs.get("mapdy") ?? meta.map_dy ?? 0)); scene.add(mapGroup);
@@ -411,7 +411,7 @@ function openEnquiry(what){ const sel = $("enqUnit"); if (what){ let o = [...sel
 $("availBtn").onclick = e => { S.avail = !S.avail; e.currentTarget.classList.toggle("on", S.avail); $("avLegend").classList.toggle("on", S.avail); paint(); };
 function setHash(h){ try { history.replaceState(null, "", h ? "#" + h : location.pathname + location.search); } catch(e){} }
 $("shareBtn").onclick = async () => { const url = location.href;
-  try { if (navigator.share) await navigator.share({title:"Sky Tree Tower · Live 3D", url}); else { await navigator.clipboard.writeText(url); toast("Link copied"); } } catch(e){} };
+  try { if (navigator.share) await navigator.share({title:"Sky Tree Tower · Ultra Experience", url}); else { await navigator.clipboard.writeText(url); toast("Link copied"); } } catch(e){} };
 let toastT; function toast(t){ let el = $("toast"); if (!el){ el = document.createElement("div"); el.id="toast";
   el.style.cssText="position:fixed;left:50%;top:calc(90px + env(safe-area-inset-top));transform:translateX(-50%);z-index:45;background:rgba(13,12,10,.9);border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-size:13px;transition:opacity .3s"; document.body.appendChild(el); }
   el.textContent = t; el.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(()=>el.style.opacity=0, 2600); }
@@ -558,7 +558,7 @@ let last = performance.now();
 renderer.setAnimationLoop(now => {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; idle += dt;
   stepFlight(now);
-  const calm = !flight && idle > 10 && S.sel < 0 && !document.querySelector(".modal.open") && !document.body.classList.contains("present") && !S.busy;
+  const calm = !STILL && !flight && idle > 10 && S.sel < 0 && !document.querySelector(".modal.open") && !document.body.classList.contains("present") && !S.busy;
   controls.autoRotate = calm; controls.autoRotateSpeed = 0.35;
   controls.enabled = !S.busy;
   controls.update(dt);

@@ -214,6 +214,7 @@ body.present #pinPine,body.sheet-open #pinPine{display:none!important}
 #loader b{font-family:"Cormorant Garamond",serif;font-size:42px;letter-spacing:.22em;color:var(--gold2);font-weight:600}
 #loader .bar{width:180px;height:2px;background:rgba(244,236,220,.12);overflow:hidden;border-radius:2px}
 #loader .bar i{display:block;height:100%;width:0;background:var(--gold);transition:width .3s}
+#loader em{font-style:normal;font-size:11px;letter-spacing:.2em;color:var(--gold);opacity:.8;font-variant-numeric:tabular-nums}
 #loader small{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--mute)}
 @media (max-width:760px){
   header{padding-left:14px;padding-right:14px}
@@ -233,9 +234,10 @@ body.present #pinPine,body.sheet-open #pinPine{display:none!important}
   .mapside{border-left:0;border-top:1px solid var(--line);max-height:34vh}
 }
 </style>
+<link rel="stylesheet" href="ui2.css?v=2">
 </head>
 <body>
-<div id="loader"><b>SKY TREE</b><div class="bar"><i id="lbar"></i></div><small>Pine Avenue · Lahore</small></div>
+<div id="loader"><b>SKY TREE</b><div class="bar"><i id="lbar"></i></div><small>Pine Avenue · Lahore</small><em id="lpct">0%</em></div>
 
 <div id="stage"><canvas id="view"></canvas><div class="vignette"></div></div>
 
@@ -267,7 +269,7 @@ body.present #pinPine,body.sheet-open #pinPine{display:none!important}
   <button id="viewBtn" title="Street level view">⌂<span class="lab">Street level</span></button>
   <button id="explodeBtn" title="Explode floors">⇕<span class="lab">Explode floors</span></button>
   <button id="presBtn" title="Presentation mode">▷<span class="lab">Present</span></button>
-  <button id="splatBtn" title="Live 3D (free orbit, explode, floors)" onclick="location.href='/skytree/splat.html'+location.hash">◈<span class="lab">Live 3D</span></button>
+  <button id="splatBtn" title="Ultra Experience (free orbit, explode, floors)" onclick="location.href='/skytree/splat.html'+location.hash">◈<span class="lab">Ultra Experience</span></button>
   <span class="sep"></span>
   <button id="tourBtn" title="Virtual tour">◎<span class="lab">Enter Residence 10-A</span></button>
 </div>
@@ -321,7 +323,7 @@ const SZ = SMALL && innerWidth > innerHeight ? "s/" : "";
 const PSZ = innerWidth > innerHeight && innerWidth * Math.min(devicePixelRatio || 1, 2) <= 1700 ? "s/" : "";   // 2560 path frames: 1600 px copy for small landscape screens
 /* 3 x 3 grid of rendered camera paths: height (g ground, m mid, h high) x distance (1 near, 2 mid, 3 far) */
 const HTS = ["g","m","h"], HT_N = {g:"Street",m:"Mid",h:"High"}, DS_N = ["Near","Mid","Far"];
-const PNEW = new Set();           // paths rendered at 2560 under media/p/<key>/ (from media/p/paths.json)
+const PNEW = new Set(["g1","g2","g3","h1","h2","h3","m1","m2","m3"]);           // paths rendered at 2560 under media/p/<key>/ (from media/p/paths.json)
 const pathOK = k => PNEW.has(k) || k === "m2" || k === "g2";
 const isNew = () => PNEW.has(S.path);
 const src = (set, i) => set==="explode" ? `${M}explode/day/${SZ}e_${pad(i)}.webp`
@@ -330,7 +332,7 @@ const src = (set, i) => set==="explode" ? `${M}explode/day/${SZ}e_${pad(i)}.webp
 const msrc = (set, i) => set==="explode" ? `${M}explode/mask/e_${pad(i)}.png` : isNew() ? `${M}p/${S.path}/mask/f_${pad(i)}.png`
   : S.path[0]==="g" ? `${M}ground/mask/g_${pad(i)}.png` : `${M}orbit/mask/f_${pad(i)}.png`;
 
-const S = { path:"m2", view:"aerial", mode:"day", frame:START, exp:0, exploded:false, anim:false, hover:-1, sel:-1, maskData:null, maskKey:"", maskW:0, maskH:0 };
+const S = { path:"g2", view:"street", mode:"day", frame:START, exp:0, exploded:false, anim:false, hover:-1, sel:-1, maskData:null, maskKey:"", maskW:0, maskH:0 };
 let dpr = Math.min(devicePixelRatio || 1, 2);
 function resize(){ dpr = Math.min(devicePixelRatio||1, 2); cv.width = innerWidth*dpr; cv.height = innerHeight*dpr; draw(); }
 addEventListener("resize", resize);
@@ -891,18 +893,54 @@ function presExit(){ document.body.classList.remove("present"); try { if (docume
 document.getElementById("presBtn").onclick = presEnter;
 document.getElementById("pPrev").onclick = () => presGo(-1); document.getElementById("pNext").onclick = () => presGo(1);
 document.getElementById("pExit").onclick = presExit;
-fetch(M + "p/paths.json", {cache:"no-cache"}).then(r => r.ok ? r.json() : []).catch(() => []).then(a => { (a || []).forEach(k => PNEW.add(k)); padBuild();
-  if (PNEW.has("m2")){ S.maskKey = ""; loadMask(); draw(); } });
 padBuild();
 
 /* ---------- boot ---------- */
 resize();
-const bar = document.getElementById("lbar");
-const pl = preloadAll(p => bar.style.width = (p*100).toFixed(0) + "%");
-pl.first.then(() => { draw(); loadMask(); setTimeout(() => { const l = document.getElementById("loader"); l.style.opacity = 0; setTimeout(()=>l.remove(), 800); }, 450); setTimeout(applyHash, 700); });
-pl.all.then(() => { preloadSet("dusk", ORBIT_N); setTimeout(()=>preloadSet("explode", EXP_N), 1500); });
+const bar = document.getElementById("lbar"), lpct = document.getElementById("lpct");
+{ const h = new URLSearchParams(location.hash.slice(1)).get("path"); if (h && pathOK(h)){ S.path = h; S.view = h[0] === "g" ? "street" : "aerial"; } }
+bView.classList.toggle("on", S.view === "street"); bView.querySelector(".lab").textContent = S.view === "street" ? "Aerial view" : "Street level"; bView.firstChild.textContent = S.view === "street" ? "✈" : "⌂";
+padSync();
+/* 1) the opening path loads COMPLETELY behind the loader (all 81 views + hover map), coarse-to-fine so the bar moves smoothly */
+const first = [...frameOrder().map(i => src("day", i)), msrc("orbit", S.frame)];
+let nDone = 0; const setBar = () => { const p = nDone / first.length; bar.style.width = (p*100).toFixed(1) + "%"; if (lpct) lpct.textContent = Math.round(p*100) + "%"; };
+const firstAll = Promise.all(first.map(u => img(u).p.then(() => { nDone++; setBar(); })));
+polysFor(curMask());
+const reveal = () => { if (reveal.done) return; reveal.done = true; draw(); loadMask();
+  setTimeout(() => { const l = document.getElementById("loader"); if (!l) return; l.style.opacity = 0; setTimeout(()=>l.remove(), 800); }, 300);
+  setTimeout(applyHash, 500); setTimeout(background, 1200); };
+firstAll.then(reveal); setTimeout(reveal, 45000);   // never trap a viewer on a dead connection
+/* 2) then, quietly in the background: the rest of this path, neighbouring paths, the others, explode, dusk, and the Ultra experience */
+const warmed = new Set();
+function warm(u){ if (warmed.has(u) || cache.has(u)) return Promise.resolve(); warmed.add(u);
+  return fetch(u, {cache:"force-cache", priority:"low"}).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null); }
+function pathUrls(k){ const out = [], P = S.path; S.path = k; for (const i of frameOrder()){ out.push(src("day", i)); } for (const i of frameOrder()) out.push(msrc("orbit", i)); S.path = P;
+  out.push(`${M}p/${k}/polys.json?v=4`); return out; }
+function neighbours(k){ const h = HTS.indexOf(k[0]), d = +k[1], o = [];
+  for (const [dh, dd] of [[0,-1],[0,1],[1,0],[-1,0],[1,-1],[1,1],[-1,-1],[-1,1],[2,0],[-2,0],[2,-1],[2,1],[-2,-1],[-2,1]]){ const H = h+dh, D = d+dd; if (H>=0&&H<3&&D>=1&&D<=3) o.push(HTS[H]+D); }
+  return o.filter(pathOK); }
+async function background(){
+  const lean = navigator.connection && (navigator.connection.saveData || /2g/.test(navigator.connection.effectiveType || ""));
+  const Q = [];
+  for (const i of frameOrder()) Q.push(msrc("orbit", i));                         // hover maps for every view of this path
+  const nb = neighbours(S.path); for (const k of lean ? nb.slice(0,2) : nb) Q.push(...pathUrls(k));
+  for (let i = 0; i < EXP_N; i++){ Q.push(src("explode", i)); Q.push(msrc("explode", i)); } Q.push(`${M}explode/polys.json?v=4`);
+  if (!lean){ for (const i of frameOrder()) Q.push(`${M}orbit/dusk/${SZ}f_${pad(i)}.webp`);
+    Q.push("splat.html", "splat.bundle.js?v=8", "media/splat/meta.json"); }
+  let n = 0; const run = async () => { while (Q.length){ const u = Q.shift(); await warm(u); n++; } };
+  await Promise.all([run(), run(), run(), run()]);
+  if (!lean) warmUltra();
+}
+async function warmUltra(){   // the Ultra experience opens instantly: its splat files are already in the browser cache
+  try { const m = await (await fetch("media/splat/meta.json", {cache:"no-cache"})).json(); const r = m.rev ? "?r=" + m.rev : "";
+    const phone = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || Math.min(screen.width, screen.height) < 820;
+    const files = [m.file_preview, phone ? m.file_mobile : m.file].filter(Boolean);
+    for (const f of files) await warm("media/splat/" + f + r);
+  } catch(e){}
+}
 setTimeout(() => hint.style.opacity = 0, 6000);
 })();
 </script>
+<script src="ui2.js?v=2" defer></script>
 </body>
 </html>

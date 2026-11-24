@@ -4,7 +4,7 @@
 <base href="/skytree/">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Sky Tree Tower · Live 3D</title>
+<title>Sky Tree Tower · Ultra Experience</title>
 <meta name="description" content="Explore Sky Tree Tower, Pine Avenue Lahore: 360° exterior, every floor, residences and a virtual tour.">
 <meta name="theme-color" content="#0d0c0a">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%230d0c0a%22/%3E%3Ctext x=%2216%22 y=%2223%22 font-size=%2220%22 text-anchor=%22middle%22 fill=%22%23d9b46a%22 font-family=%22Georgia%22%3ES%3C/text%3E%3C/svg%3E">
@@ -254,10 +254,11 @@ body.present .pin3d,body.busy .pin3d,body.exploded .pin3d{opacity:0;pointer-even
 @media (max-width:760px){ .dock{gap:2px;padding:4px} .dock button{padding:9px 11px} .dock .lab{display:none} #views{bottom:calc(70px + env(safe-area-inset-bottom))} }
 
 </style>
+<link rel="stylesheet" href="ui2.css?v=2">
 </head>
 <body>
 <body>
-<div id="loader"><b>SKY TREE</b><div class="bar"><i id="lbar"></i></div><small>Live 3D · Pine Avenue · Lahore</small></div>
+<div id="loader"><b>SKY TREE</b><div class="bar"><i id="lbar"></i></div><small>Ultra Experience · Pine Avenue · Lahore</small></div>
 
 <div id="stage"><div class="vignette"></div></div>
 
@@ -315,6 +316,7 @@ body.present .pin3d,body.busy .pin3d,body.exploded .pin3d{opacity:0;pointer-even
 <div id="lightbox"><img alt=""></div>
 
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js" defer></script>
-<script type="module" src="splat.bundle.js?v=7"></script>
+<script type="module" src="splat.bundle.js?v=8"></script>
+<script src="ui2.js?v=2" defer></script>
 </body>
 </html>
