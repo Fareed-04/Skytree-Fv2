@@ -442,7 +442,9 @@ const lookFor = (room, look) => (PV[room] || ["day"]).includes(look) ? look : "d
 const sceneId = (room, look) => look === "day" ? room : room + "@" + look;
 function pill(div, a){ div.classList.add("hs-pill"); if (a.info) div.classList.add("hs-info");
   const d = document.createElement("div"); d.innerHTML = `<i>${a.info ? "i" : "➜"}</i>${a.t}`; div.appendChild(d); }
-function goRoom(room, keepView){ if (!roomOK(room)) return; tourRoom = room; const id = sceneId(room, lookFor(room, LOOK));
+function goRoom(room, keepView, link){ if (!roomOK(room)) return;
+  if (!keepView && window.SkyTour && viewer && room !== tourRoom && !goRoom.busy){ goRoom.busy = true; const from = tourRoom; return window.SkyTour.fly(from, room, link, viewer, () => goRoom(room, false, null)).finally(() => goRoom.busy = false); }
+  tourRoom = room; const id = sceneId(room, lookFor(room, LOOK));
   if (keepView) viewer.loadScene(id, viewer.getPitch(), viewer.getYaw(), viewer.getHfov()); else viewer.loadScene(id); todSync(); }
 function todSync(){ const t = $("tod"), av = PV[tourRoom] || ["day"]; t.classList.toggle("on", av.length > 1);
   const cur = lookFor(tourRoom, LOOK); $("todR").value = LOOKS.indexOf(cur);
@@ -461,11 +463,11 @@ async function openTour(arrive, silent, start){
   const scenes = {};
   ROOMS.filter(r => roomOK(r.id)).forEach(r => (PV[r.id] || ["day"]).forEach(look => {
     scenes[sceneId(r.id, look)] = {title:r.t, panorama:`${M}pano/${look === "day" ? r.id : r.id + "@" + look}.jpg`, yaw:r.yaw, hfov:100, autoLoad:true,
-      hotSpots: [...r.links.filter(l => roomOK(l.to)).map(l => ({pitch:l.pitch, yaw:l.yaw, createTooltipFunc:pill, createTooltipArgs:{t:l.t}, clickHandlerFunc:() => goRoom(l.to)})),
+      hotSpots: [...r.links.filter(l => roomOK(l.to)).map(l => ({pitch:l.pitch, yaw:l.yaw, createTooltipFunc:pill, createTooltipArgs:{t:l.t}, clickHandlerFunc:() => goRoom(l.to, false, l)})),
                  ...r.info.map(a => ({pitch:a.pitch, yaw:a.yaw, createTooltipFunc:pill, createTooltipArgs:{t:a.t, info:1}}))]}; }));
   tourRoom = start && roomOK(start) ? start : "living";
   const first = sceneId(tourRoom, lookFor(tourRoom, LOOK)); if (arrive) scenes[first].hfov = 48;
-  viewer = pannellum.viewer("pano", {default:{firstScene:first, sceneFadeDuration:700, autoRotate:-1.5, showControls:false}, scenes});
+  viewer = pannellum.viewer("pano", {default:{firstScene:first, sceneFadeDuration:700, autoRotate:-1.5, showControls:false}, scenes}); if (window.SkyTour) window.SkyTour.setViewer(viewer);
   if (arrive && !silent) viewer.on("load", function once(){ viewer.off("load", once); viewer.setHfov(100, 1800); });
   const rb = $("rooms"); rb.innerHTML = "";
   ROOMS.filter(r => roomOK(r.id)).forEach(r => { const b = document.createElement("button"); b.textContent = r.t; b.dataset.r = r.id; b.onclick = () => goRoom(r.id); rb.appendChild(b); });

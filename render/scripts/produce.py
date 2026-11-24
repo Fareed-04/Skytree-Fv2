@@ -1879,6 +1879,22 @@ for ps in PASSES:
             ring("R", 30.0, 36.0, 25.0, 60, 20)                      # podium terrace garden
             ring("S", 70.0, 2.5, 4.0, 72, 22)                        # ground level, eye height all round
             ring("T", 50.0, 26.0, 0.0, 48, 22)                       # forecourt / site ground from above
+        if os.environ.get("ST_SPLAT_V3") == "1":
+            # v3: facade-parallel grids 13 m off every face, floor by floor (about 3x the pixels per metre of the
+            # closest rings), alternating yaw so neighbouring views give parallax
+            def grid(tag, cols, rows, face):
+                k = 0
+                for ci, u in enumerate(cols):
+                    for zi, z in enumerate(rows):
+                        yaw = math.radians(15.0 if (ci + zi) % 2 else -15.0); tz = z + (3.0 if z < 6 else 0.0)
+                        P0, nrm = face(u, z)                 # camera position (tower-centred) and inward normal
+                        tx = math.cos(yaw) * nrm[0] - math.sin(yaw) * nrm[1]; ty = math.sin(yaw) * nrm[0] + math.cos(yaw) * nrm[1]
+                        cams.append((f"{tag}{k:03d}", Vector((CX + P0[0], CY + P0[1], z)), Vector((CX + P0[0] + tx * 14.0, CY + P0[1] + ty * 14.0, tz)), 24)); k += 1
+            COLS = [-20.0, -12.0, -4.0, 4.0, 12.0, 20.0]; ROWS = [3.0, 13.0, 24.0, 35.0, 46.0, 57.0, 68.0, 80.0]
+            grid("U", COLS, ROWS, lambda u, z: (((u, -39.4) if z < 19.0 else (u, -30.8)), (0.0, 1.0)))     # front (Pine Avenue)
+            grid("V", COLS, ROWS, lambda u, z: ((u, 40.0), (0.0, -1.0)))                                     # back
+            grid("W", [y_ * 1.1 for y_ in COLS], ROWS, lambda u, z: ((-36.8, u), (1.0, 0.0)))                # west side
+            grid("X", [y_ * 1.1 for y_ in COLS], ROWS, lambda u, z: ((36.8, u), (-1.0, 0.0)))                # east side
         if test: cams = cams[::62]
         log(f"splat: {len(cams)} views at {W_}x{H_}")
         frames = []
@@ -1908,7 +1924,7 @@ for ps in PASSES:
         dg = bpy.context.evaluated_depsgraph_get(); pts = []; t_start = time.time(); rng = _rnd.Random(3)
         for k, (nm, mw, lens) in enumerate(frames):
             if k % (1 if test else 5): continue
-            if time.time() - t_start > 1500: break
+            if time.time() - t_start > float(os.environ.get("ST_SPARSE_SECS") or 1500): break
             im = bpy.data.images.load(os.path.join(idir, nm + ".png")); px = im.pixels[:]; f_ = W_ * lens / 36.0
             org = mw.translation; R3 = mw.to_3x3()
             for gy in range(27):

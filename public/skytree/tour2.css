@@ -1,0 +1,29 @@
+/* tour v2: glass floor-plan mini-map + fly transitions */
+#tplan{position:absolute;left:18px;bottom:18px;z-index:6;width:300px;background:rgba(18,18,22,.58);backdrop-filter:blur(18px) saturate(1.1);-webkit-backdrop-filter:blur(18px) saturate(1.1);border:1px solid rgba(255,255,255,.14);border-radius:18px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.4);transition:width .3s,opacity .3s}
+#tplan.off{opacity:0;pointer-events:none}
+#tplan .hd{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;color:#f4ecdc;font-size:11px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;background:none;border:0}
+#tplan .hd em{margin-left:auto;font-style:normal;letter-spacing:.06em;text-transform:none;font-size:12px;color:#e6c27a}
+#tplan .hd i{width:7px;height:7px;border-right:1.5px solid #f4ecdc;border-bottom:1.5px solid #f4ecdc;transform:rotate(45deg) translate(-2px,-2px);opacity:.6;transition:transform .25s}
+#tplan.min .hd i{transform:rotate(-135deg) translate(-1px,-1px)}
+#tplan .pl{padding:0 12px 12px;transition:max-height .3s;max-height:300px}
+#tplan.min{width:220px}#tplan.min .pl{max-height:0;padding-bottom:0}
+#tplan svg{width:100%;height:auto;display:block}
+#tplan .w{stroke:rgba(255,255,255,.92);stroke-linecap:square}
+#tplan .t{stroke:rgba(255,255,255,.55);stroke-width:1;fill:none}
+#tplan .g{stroke:rgba(170,210,255,.75);stroke-width:1.2}
+#tplan .f{fill:none;stroke:rgba(255,255,255,.4);stroke-width:1}
+#tplan .r{fill:rgba(255,255,255,.04);stroke:rgba(255,255,255,.22);stroke-width:.8;stroke-dasharray:2 2}
+#tplan text{fill:rgba(255,255,255,.42);font:600 9px Manrope,system-ui,sans-serif;letter-spacing:.14em}
+#tplan .dot{cursor:pointer}#tplan .dot .hit{fill:transparent}
+#tplan .dot .core{fill:#fff}#tplan .dot .halo{fill:rgba(255,255,255,.18)}
+#tplan .dot:hover .halo{fill:rgba(230,194,122,.35)}
+#tplan .dot.on .core{fill:#e6c27a}#tplan .dot.on .halo{fill:rgba(230,194,122,.35);animation:tpp 1.8s infinite}
+#tplan .dot.on .cone{fill:url(#none);fill:rgba(230,194,122,.28)}
+@keyframes tpp{0%{r:6}60%{r:14;opacity:.2}100%{r:6;opacity:.6}}
+#pano{transition:none;transform-origin:50% 50%}
+#pano.flyout{transition:transform .48s cubic-bezier(.55,0,.9,.4),filter .48s;transform:scale(1.28);filter:blur(7px) brightness(1.18)}
+#pano.flyin{transform:scale(.9);filter:blur(6px) brightness(1.1)}
+#pano.flyin2{transition:transform .72s cubic-bezier(.15,.7,.25,1),filter .72s;transform:none;filter:none}
+#tpFly{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:5;opacity:0;pointer-events:none;transition:opacity .35s;background:#000}
+#tpFly.on{opacity:1}
+@media (max-width:760px){#tplan{right:10px;left:auto;bottom:auto;top:62px;width:250px}#tplan.min{width:190px}}

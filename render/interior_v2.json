@@ -1,0 +1,46 @@
+[
+ {
+  "id": "cceccf6b-7c1e-4d83-bd0a-176305d286fa",
+  "slug": "q_lux",
+  "kind": "interior",
+  "target": 0,
+  "name": "Modern Luxury Living Room",
+  "fileType": "blend",
+  "downloadUrl": "https://www.blenderkit.com/api/v1/downloads/f9c548dc-d38c-4a4a-a37b-e63c3a516a16/",
+  "bytes": null,
+  "license": "royalty_free"
+ },
+ {
+  "id": "f2277997-671e-4f6f-b2d7-b4143ec48f78",
+  "slug": "q_warm",
+  "kind": "interior",
+  "target": 0,
+  "name": "Modern Luxury Living Room Interior",
+  "fileType": "blend",
+  "downloadUrl": "https://www.blenderkit.com/api/v1/downloads/289ff094-0502-4635-84c6-06d59b190fc0/",
+  "bytes": null,
+  "license": "royalty_free"
+ },
+ {
+  "id": "c8bccae6-7d0d-4e28-98f3-8029a0d15f15",
+  "slug": "q_open",
+  "kind": "interior",
+  "target": 0,
+  "name": "Modern Open Plan Living and Dining Room",
+  "fileType": "blend",
+  "downloadUrl": "https://www.blenderkit.com/api/v1/downloads/90928647-44ba-492e-8124-3d9c7493e38a/",
+  "bytes": null,
+  "license": "royalty_free"
+ },
+ {
+  "id": "f80388c8-e592-4593-9ccc-a9db6f5c05ed",
+  "slug": "q_haven",
+  "kind": "interior",
+  "target": 0,
+  "name": "Bedroom Haven",
+  "fileType": "blend",
+  "downloadUrl": "https://www.blenderkit.com/api/v1/downloads/8a9e5a63-888d-4419-a1ed-c3fb7d52f383/",
+  "bytes": null,
+  "license": "royalty_free"
+ }
+]
