@@ -7,7 +7,7 @@ const PLAN_W = 17.2, PLAN_H = 13.6;
 const DOTS = {           // room id -> [x, y] on the plan
   living:  [5.2, 3.6], bedroom: [14.4, 4.6], view: [8.6, -0.9]
 };
-const LABEL = { living: "Living & Dining", bedroom: "Master Bedroom", view: "Balcony" };
+const LABEL = { living: "Living Room", bedroom: "Master Bedroom", view: "Balcony" };
 const TRANS = {};        // "from>to" -> video url; filled from media/pano/trans/index.json when rendered fly-throughs exist
 fetch(M + "pano/trans/index.json", {cache: "no-cache"}).then(r => r.ok ? r.json() : {}).then(j => Object.assign(TRANS, j || {})).catch(() => {});
 
@@ -71,7 +71,7 @@ box.querySelector("#tpToggle").onclick = () => box.classList.toggle("min");
 if (innerWidth < 760) box.classList.add("min");
 /* the view cone follows where you look */
 (function cone(){ requestAnimationFrame(cone); if (!viewerRef || !cur) return; const c = dotsG.querySelector(".dot.on .cone"); if (!c) return;
-  try { const off = {living: 0, bedroom: 90, view: 0}[cur] || 0; c.setAttribute("transform", `rotate(${(viewerRef.getYaw() + off).toFixed(1)})`); } catch(e){} })();
+  try { const off = {living: -84, bedroom: -88, view: 0}[cur] || 0; c.setAttribute("transform", `rotate(${(viewerRef.getYaw() + off).toFixed(1)})`); } catch(e){} })();
 
 /* fly-through: a rendered 1-1.5 s flight when we have one, otherwise a quick push toward the hotspot with motion blur */
 const pano = document.getElementById("pano");
@@ -79,13 +79,14 @@ const vid = document.createElement("video"); vid.id = "tpFly"; vid.muted = true;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function fly(from, to, link, viewer, go){
   viewerRef = viewer;
-  const url = TRANS[from + ">" + to];
+  const key = TRANS[from + ">" + to]; const url = key ? `${M}pano/trans/${key}${Math.min(screen.width, screen.height) < 820 ? "_s" : ""}.mp4` : null;
   if (url){
     try {
       vid.src = url; vid.currentTime = 0; vid.classList.add("on");
       if (link) viewer.lookAt(link.pitch, link.yaw, viewer.getHfov(), 350);
       await vid.play(); await sleep(Math.max(300, (vid.duration || 1.2) * 1000 - 380));
-      go(); await sleep(420); vid.classList.remove("on"); return;
+      const loaded = new Promise(r => { const h = () => { try { viewer.off("load", h); } catch(e){} r(); }; try { viewer.on("load", h); } catch(e){} setTimeout(r, 2200); });
+      go(); await loaded; await sleep(620); vid.classList.remove("on"); return;
     } catch(e){ vid.classList.remove("on"); }
   }
   pano.classList.add("flyout");
@@ -94,6 +95,8 @@ async function fly(from, to, link, viewer, go){
   pano.classList.remove("flyout"); pano.classList.add("flyin"); go();
   await sleep(40); pano.classList.add("flyin2"); await sleep(720); pano.classList.remove("flyin", "flyin2");
 }
-window.SkyTour = { fly, setViewer: v => viewerRef = v };
+const warmed = new Set(); function warmClips(){ for (const k of Object.values(TRANS)){ const u = `${M}pano/trans/${k}${Math.min(screen.width, screen.height) < 820 ? "_s" : ""}.mp4`; if (!warmed.has(u)){ warmed.add(u); fetch(u).catch(()=>{}); } }
+  for (const r of ["living", "bedroom", "view"]){ const u = `${M}pano/${r}.jpg`; if (!warmed.has(u)){ warmed.add(u); fetch(u).catch(()=>{}); } } }
+window.SkyTour = { warmClips, fly, setViewer: v => { viewerRef = v; warmClips(); } };
 document.addEventListener("click", () => { if (!viewerRef && window.pannellum){ /* the viewer exposes itself via fly() calls */ } });
 })();

@@ -10,7 +10,7 @@ echo  [1/3] Rendering about 190 facade close-ups (existing views are kept; about
 set ST_SPLAT_V2=1
 set ST_SPLAT_V3=1
 set ST_SAMPLES=96
-set ST_SPARSE_SECS=500
+set ST_SPARSE_SECS=240
 "%BLENDER%" -b --factory-startup "scene\sky-tree-v3.blend" --python "scripts\produce.py" -- --no-slice --passes splat_data > "out\splat_capture_v3.log" 2>&1
 echo done> "out\splat\v3_capture_done.txt"
 :train

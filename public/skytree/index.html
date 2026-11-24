@@ -669,10 +669,10 @@ async function toggleExplode(){
 /* ---------- tour ---------- */
 /* rooms: labels anchored to where each opening actually is in the rendered panoramas (yaw in degrees) */
 const ROOMS = [
-  {id:"living", t:"Living & Dining", yaw:0, links:[{to:"view", yaw:88, pitch:-2, t:"Balcony view"}, {to:"bedroom", yaw:-150, pitch:-6, t:"Master bedroom"}],
-   info:[{yaw:0, pitch:-4, t:"Kitchen & dining"}]},
-  {id:"bedroom", t:"Master Bedroom", yaw:20, links:[{to:"living", yaw:126, pitch:-4, t:"Living & dining"}, {to:"view", yaw:88, pitch:2, t:"Balcony view"}], info:[]},
-  {id:"view", t:"Balcony · Floor 10", yaw:0, links:[{to:"living", yaw:-158, pitch:-4, t:"Back inside"}, {to:"pine", yaw:0, pitch:-28, t:"Down to Pine Avenue"}], info:[]},
+  {id:"living", t:"Living Room", yaw:0, links:[{to:"view", yaw:84, pitch:-2, t:"Out to the balcony"}, {to:"bedroom", yaw:-40, pitch:-4, t:"Master bedroom"}],
+   info:[{yaw:-97, pitch:4, t:"Bespoke wall art · walnut panelling"}]},
+  {id:"bedroom", t:"Master Bedroom", yaw:20, links:[{to:"living", yaw:126, pitch:-4, t:"Living room"}, {to:"view", yaw:88, pitch:2, t:"Balcony view"}], info:[]},
+  {id:"view", t:"Balcony · Floor 10", yaw:0, links:[{to:"living", yaw:-158, pitch:-4, t:"Back to the living room"}, {to:"bedroom", yaw:158, pitch:-4, t:"Master bedroom"}, {to:"pine", yaw:0, pitch:-28, t:"Down to Pine Avenue"}], info:[]},
   {id:"terrace", t:"Terrace Garden", yaw:0, links:[{to:"rooftop", yaw:0, pitch:48, t:"Up to the rooftop garden"}, {to:"pine", yaw:180, pitch:-30, t:"Down to Pine Avenue"}], info:[{yaw:0, pitch:-8, t:"Skylight & flower court"}]},
   {id:"rooftop", t:"Rooftop Garden", yaw:180, links:[{to:"terrace", yaw:90, pitch:-40, t:"Down to the terrace garden"}], info:[{yaw:180, pitch:-12, t:"Sky lounge · Pine Avenue below"}]},
   {id:"pine", t:"Pine Avenue", yaw:0, links:[{to:"view", yaw:-14, pitch:24, t:"Up to Residence 10-A"}], info:[{yaw:12, pitch:6, t:"Sky Tree Tower"}]}];
@@ -929,7 +929,7 @@ async function background(){
   const nb = neighbours(S.path); for (const k of lean ? nb.slice(0,2) : nb) Q.push(...pathUrls(k));
   for (let i = 0; i < EXP_N; i++){ Q.push(src("explode", i)); Q.push(msrc("explode", i)); } Q.push(`${M}explode/polys.json?v=4`);
   if (!lean){ for (const i of frameOrder()) Q.push(`${M}orbit/dusk/${SZ}f_${pad(i)}.webp`);
-    Q.push("splat.html", "splat.bundle.js?v=8", "media/splat/meta.json"); }
+    Q.push("splat.html", "splat.bundle.js?v=10", "media/splat/meta.json"); }
   let n = 0; const run = async () => { while (Q.length){ const u = Q.shift(); await warm(u); n++; } };
   await Promise.all([run(), run(), run(), run()]);
   if (!lean) warmUltra();
@@ -945,6 +945,6 @@ setTimeout(() => hint.style.opacity = 0, 6000);
 })();
 </script>
 <script src="ui2.js?v=2" defer></script>
-<script src="tour2.js?v=2" defer></script>
+<script src="tour2.js?v=4" defer></script>
 </body>
 </html>

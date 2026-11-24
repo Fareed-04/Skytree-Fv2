@@ -1886,6 +1886,7 @@ for ps in PASSES:
                 k = 0
                 for ci, u in enumerate(cols):
                     for zi, z in enumerate(rows):
+                        if tag != "U" and (zi + ci) % 2: continue      # back and sides: every other view
                         yaw = math.radians(15.0 if (ci + zi) % 2 else -15.0); tz = z + (3.0 if z < 6 else 0.0)
                         P0, nrm = face(u, z)                 # camera position (tower-centred) and inward normal
                         tx = math.cos(yaw) * nrm[0] - math.sin(yaw) * nrm[1]; ty = math.sin(yaw) * nrm[0] + math.cos(yaw) * nrm[1]

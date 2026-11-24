@@ -85,6 +85,9 @@ if best is None and cam_obj:
     print("no open spot found, using the scene camera")
 else:
     eye = best[1]; print(f"spot {tuple(round(v, 2) for v in eye)} clearance {best[2]:.2f} m, mean {best[3]:.2f} m")
+import json as _json
+_json.dump({"eye": list(eye), "floor_z": floor_z}, open(os.path.join(OUT, f"{ROOM}.spot.json"), "w"))
+if "--spot-only" in argv: sys.exit(0)
 cd = bpy.data.cameras.new("Pano"); cd.type = "PANO"
 try:
     cd.panorama_type = "EQUIRECTANGULAR"
@@ -102,9 +105,10 @@ try:
     scene.cycles.device = "GPU"
 except Exception as e:
     print("GPU:", e)
-scene.cycles.samples = 16 if QUICK else 384
+scene.cycles.samples = 16 if QUICK else int(os.environ.get("ST_PANO_SAMPLES") or 384)
 scene.cycles.use_denoising = True
-scene.render.resolution_x, scene.render.resolution_y = (1024, 512) if QUICK else (4096, 2048)
+_R = int(os.environ.get("ST_PANO_RES") or 4096)
+scene.render.resolution_x, scene.render.resolution_y = (1024, 512) if QUICK else (_R, _R // 2)
 scene.render.resolution_percentage = 100
 scene.render.use_border = False
 scene.render.image_settings.file_format = "JPEG"; scene.render.image_settings.quality = 90

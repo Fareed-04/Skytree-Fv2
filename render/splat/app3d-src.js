@@ -427,9 +427,9 @@ function applyHash(){ const h = new URLSearchParams(location.hash.slice(1));
 
 /* ================================================================== 360 interiors (same rooms + hotspots as the rendered explorer) */
 const ROOMS = [
-  {id:"living", t:"Living & Dining", yaw:0, links:[{to:"view", yaw:88, pitch:-2, t:"Balcony view"}, {to:"bedroom", yaw:-150, pitch:-6, t:"Master bedroom"}], info:[{yaw:0, pitch:-4, t:"Kitchen & dining"}]},
-  {id:"bedroom", t:"Master Bedroom", yaw:20, links:[{to:"living", yaw:126, pitch:-4, t:"Living & dining"}, {to:"view", yaw:88, pitch:2, t:"Balcony view"}], info:[]},
-  {id:"view", t:"Balcony · Floor 10", yaw:0, links:[{to:"living", yaw:-158, pitch:-4, t:"Back inside"}, {to:"pine", yaw:0, pitch:-28, t:"Down to Pine Avenue"}], info:[]},
+  {id:"living", t:"Living Room", yaw:0, links:[{to:"view", yaw:84, pitch:-2, t:"Out to the balcony"}, {to:"bedroom", yaw:-40, pitch:-4, t:"Master bedroom"}], info:[{yaw:-97, pitch:4, t:"Bespoke wall art · walnut panelling"}]},
+  {id:"bedroom", t:"Master Bedroom", yaw:20, links:[{to:"living", yaw:126, pitch:-4, t:"Living room"}, {to:"view", yaw:88, pitch:2, t:"Balcony view"}], info:[]},
+  {id:"view", t:"Balcony · Floor 10", yaw:0, links:[{to:"living", yaw:-158, pitch:-4, t:"Back to the living room"}, {to:"bedroom", yaw:158, pitch:-4, t:"Master bedroom"}, {to:"pine", yaw:0, pitch:-28, t:"Down to Pine Avenue"}], info:[]},
   {id:"terrace", t:"Terrace Garden", yaw:0, links:[{to:"rooftop", yaw:0, pitch:48, t:"Up to the rooftop garden"}, {to:"pine", yaw:180, pitch:-30, t:"Down to Pine Avenue"}], info:[{yaw:0, pitch:-8, t:"Skylight & flower court"}]},
   {id:"rooftop", t:"Rooftop Garden", yaw:180, links:[{to:"terrace", yaw:90, pitch:-40, t:"Down to the terrace garden"}], info:[{yaw:180, pitch:-12, t:"Sky lounge · Pine Avenue below"}]},
   {id:"pine", t:"Pine Avenue", yaw:0, links:[{to:"view", yaw:-14, pitch:24, t:"Up to Residence 10-A"}], info:[{yaw:12, pitch:6, t:"Sky Tree Tower"}]}];
